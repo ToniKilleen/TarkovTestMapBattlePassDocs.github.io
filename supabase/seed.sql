@@ -7,8 +7,8 @@ insert into markers (id, map_id, name, category, lat, lng, description) values
 ('customs_demo_2', 'customs', 'Секретка в сейфе', 'secretdocs', -650, 900, 'Директорский кабинет, сейф за картиной'),
 -- Лаборатория
 ('lab_demo_1', 'laboratory', 'Чертежи в лаборатории', 'texdocs', -350, 750, 'Синяя зона, стол с компьютерами'),
--- Терминал (Ледокол) - новая карта
-('icebreaker_demo_1', 'icebreaker', 'Доки на Терминале', 'findocs', -500, 1000, 'Первый этаж главного здания, ресепшен'),
+-- Ледокол - новая карта
+('icebreaker_demo_1', 'icebreaker', 'Доки на Ледоколе', 'findocs', -500, 1000, 'Трюм корабля, каюта капитана'),
 -- Лабиринт - новая карта
 ('labyrinth_demo_1', 'labyrinth', 'Меддоки в Лабиринте', 'meddocs', -400, 600, 'Центральная комната, на полке с медикаментами')
 on conflict (id) do nothing;
