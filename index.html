@@ -21,117 +21,149 @@
                 </div>
             </div>
         </div>
+
         <div class="header-center">
+            <!-- Переключатель режима: Карта / Каталог -->
+            <div class="view-switcher">
+                <button id="view-map" class="view-btn active">
+                    <span class="view-icon">🗺</span>
+                    <span>КАРТА</span>
+                </button>
+                <button id="view-catalog" class="view-btn">
+                    <span class="view-icon">📚</span>
+                    <span>КАТАЛОГ</span>
+                </button>
+            </div>
+
+            <!-- Вкладки карт (только в режиме карты) -->
             <div id="map-selector" class="map-tabs"></div>
         </div>
+
         <div class="header-right">
             <button id="btn-admin-toggle" class="admin-toggle" title="Режим редактирования">🔒</button>
         </div>
     </header>
 
-    <!-- FILTER PANEL -->
-    <aside id="filter-panel" class="filter-panel">
-        <div class="filter-header">
-            <h3>ФИЛЬТРЫ</h3>
-            <button id="btn-toggle-all" class="btn-mini" title="Вкл/Выкл все">👁</button>
-        </div>
-        <!-- Фильтры генерируются автоматически из ICON_CONFIG -->
-        <div id="filter-group" class="filter-group"></div>
+    <!-- ============ РЕЖИМ КАРТЫ ============ -->
+    <div id="view-map-container" class="view-container">
 
-        <div id="admin-tools" class="admin-tools hidden">
-            <div class="admin-divider"><span>РЕДАКТИРОВАНИЕ</span></div>
-            <button id="btn-add-marker" class="btn-action btn-primary"><span class="btn-icon">+</span> Добавить точку</button>
-            <button id="btn-export" class="btn-action btn-ghost">📥 Экспорт JSON</button>
-            <button id="btn-import" class="btn-action btn-ghost">📤 Импорт JSON</button>
-            <input type="file" id="import-file" accept=".json" style="display:none">
-        </div>
-        <div class="filter-footer">
-            <div class="coords-display">
-                <span class="coords-label">КУРСОР</span>
-                <span id="cursor-coords" class="coords-value">—</span>
+        <!-- FILTER PANEL -->
+        <aside id="filter-panel" class="filter-panel">
+            <div class="filter-header">
+                <h3>ФИЛЬТРЫ</h3>
+                <button id="btn-toggle-all" class="btn-mini" title="Вкл/Выкл все">👁</button>
             </div>
-        </div>
-    </aside>
+            <div id="filter-group" class="filter-group"></div>
 
-    <!-- MAP -->
-    <div id="map-container">
-        <div id="map"></div>
-    </div>
-
-    <!-- HINT -->
-    <div id="adding-hint" class="adding-hint hidden">📍 КЛИКНИТЕ ПО КАРТЕ ЧТОБЫ ПОСТАВИТЬ ТОЧКУ</div>
-
-    <!-- MARKER FORM PANEL -->
-    <div id="marker-form-panel" class="marker-form-panel hidden">
-        <div class="marker-form-header">
-            <h3 id="form-panel-title">ДОБАВИТЬ ТОЧКУ</h3>
-            <button id="btn-close-form" class="close-btn">&times;</button>
-        </div>
-        <div class="marker-form-body">
-            <form id="marker-form">
-                <div class="form-group">
-                    <label for="form-name">Название</label>
-                    <input type="text" id="form-name" required placeholder="Документ на столе">
+            <div id="admin-tools" class="admin-tools hidden">
+                <div class="admin-divider"><span>РЕДАКТИРОВАНИЕ</span></div>
+                <button id="btn-add-marker" class="btn-action btn-primary"><span class="btn-icon">+</span> Добавить точку</button>
+                <button id="btn-export" class="btn-action btn-ghost">📥 Экспорт JSON</button>
+                <button id="btn-import" class="btn-action btn-ghost">📤 Импорт JSON</button>
+                <input type="file" id="import-file" accept=".json" style="display:none">
+            </div>
+            <div class="filter-footer">
+                <div class="coords-display">
+                    <span class="coords-label">КУРСОР</span>
+                    <span id="cursor-coords" class="coords-value">—</span>
                 </div>
-                <div class="form-group">
-                    <label>Категория</label>
-                    <!-- Кастомный dropdown с иконками -->
-                    <div id="form-category-picker" class="category-picker">
-                        <button type="button" id="form-category-btn" class="category-btn">
-                            <span class="category-btn-icon"></span>
-                            <span class="category-btn-label">Выбрать...</span>
-                            <span class="category-btn-arrow">▼</span>
-                        </button>
-                        <div id="form-category-dropdown" class="category-dropdown hidden"></div>
+            </div>
+        </aside>
+
+        <!-- MAP -->
+        <div id="map-container">
+            <div id="map"></div>
+        </div>
+
+        <div id="adding-hint" class="adding-hint hidden">📍 КЛИКНИТЕ ПО КАРТЕ ЧТОБЫ ПОСТАВИТЬ ТОЧКУ</div>
+
+        <!-- MARKER FORM PANEL -->
+        <div id="marker-form-panel" class="marker-form-panel hidden">
+            <div class="marker-form-header">
+                <h3 id="form-panel-title">ДОБАВИТЬ ТОЧКУ</h3>
+                <button id="btn-close-form" class="close-btn">&times;</button>
+            </div>
+            <div class="marker-form-body">
+                <form id="marker-form">
+                    <div class="form-group">
+                        <label for="form-name">Название</label>
+                        <input type="text" id="form-name" required placeholder="Документ на столе">
                     </div>
-                    <input type="hidden" id="form-category">
-                </div>
-                <div class="form-group">
-                    <label for="form-description">Описание</label>
-                    <textarea id="form-description" rows="3" placeholder="Лежит на столе в правом углу..."></textarea>
-                </div>
-                <div class="form-group">
-                    <label for="form-screenshot">Скриншот (URL)</label>
-                    <input type="text" id="form-screenshot" placeholder="images/screenshots/example.jpg">
-                </div>
-                <div class="form-coords-box" id="form-coords-hint">
-                    <span class="coords-icon">📍</span>
-                    <span class="coords-text">Нажмите на карту</span>
-                </div>
-                <input type="hidden" id="form-lat">
-                <input type="hidden" id="form-lng">
-                <input type="hidden" id="form-id">
-                <div class="form-buttons">
-                    <button type="button" id="btn-cancel-form" class="btn-action btn-ghost">Отмена</button>
-                    <button type="submit" class="btn-action btn-primary">💾 Сохранить</button>
-                </div>
-            </form>
+                    <div class="form-group">
+                        <label>Категория</label>
+                        <div id="form-category-picker" class="category-picker">
+                            <button type="button" id="form-category-btn" class="category-btn">
+                                <span class="category-btn-icon"></span>
+                                <span class="category-btn-label placeholder">Выбрать...</span>
+                                <span class="category-btn-arrow">▼</span>
+                            </button>
+                            <div id="form-category-dropdown" class="category-dropdown hidden"></div>
+                        </div>
+                        <input type="hidden" id="form-category">
+                    </div>
+                    <div class="form-group">
+                        <label for="form-description">Описание</label>
+                        <textarea id="form-description" rows="3" placeholder="Лежит на столе в правом углу..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="form-screenshot">Скриншот (URL)</label>
+                        <input type="text" id="form-screenshot" placeholder="images/screenshots/example.jpg">
+                    </div>
+                    <div class="form-coords-box" id="form-coords-hint">
+                        <span class="coords-icon">📍</span>
+                        <span class="coords-text">Нажмите на карту</span>
+                    </div>
+                    <input type="hidden" id="form-lat">
+                    <input type="hidden" id="form-lng">
+                    <input type="hidden" id="form-id">
+                    <div class="form-buttons">
+                        <button type="button" id="btn-cancel-form" class="btn-action btn-ghost">Отмена</button>
+                        <button type="submit" class="btn-action btn-primary">💾 Сохранить</button>
+                    </div>
+                </form>
+            </div>
         </div>
+
+        <!-- INFO PANEL -->
+        <aside id="info-panel" class="info-panel hidden">
+            <button id="close-info" class="close-btn">&times;</button>
+            <div id="info-content">
+                <div id="info-screenshot-wrap">
+                    <img id="info-image" src="" alt="Screenshot">
+                    <div id="info-no-image" class="no-image">📷 Нет скриншота</div>
+                </div>
+                <div class="info-body">
+                    <div id="info-category" class="info-badge">—</div>
+                    <h2 id="info-title">—</h2>
+                    <div id="info-description"><p id="info-text">Нажмите на точку на карте</p></div>
+                    <div id="info-meta">
+                        <div class="meta-row"><span class="meta-label">Координаты</span><span id="info-coords" class="meta-value">—</span></div>
+                        <div class="meta-row"><span class="meta-label">Карта</span><span id="info-map-name" class="meta-value">—</span></div>
+                    </div>
+                    <div id="info-actions" class="hidden">
+                        <button id="btn-edit-marker" class="btn-action btn-ghost">✏️ Редактировать</button>
+                        <button id="btn-delete-marker" class="btn-action btn-danger">🗑️ Удалить</button>
+                    </div>
+                </div>
+            </div>
+        </aside>
     </div>
 
-    <!-- INFO PANEL -->
-    <aside id="info-panel" class="info-panel hidden">
-        <button id="close-info" class="close-btn">&times;</button>
-        <div id="info-content">
-            <div id="info-screenshot-wrap">
-                <img id="info-image" src="" alt="Screenshot">
-                <div id="info-no-image" class="no-image">📷 Нет скриншота</div>
+    <!-- ============ РЕЖИМ КАТАЛОГА ============ -->
+    <div id="view-catalog-container" class="view-container hidden">
+        <div class="catalog-wrapper">
+            <div class="catalog-header">
+                <h2>Каталог предметов</h2>
+                <div class="catalog-search">
+                    <input type="text" id="catalog-search" placeholder="🔍 Поиск по названию или описанию...">
+                </div>
             </div>
-            <div class="info-body">
-                <div id="info-category" class="info-badge">—</div>
-                <h2 id="info-title">—</h2>
-                <div id="info-description"><p id="info-text">Нажмите на точку на карте</p></div>
-                <div id="info-meta">
-                    <div class="meta-row"><span class="meta-label">Координаты</span><span id="info-coords" class="meta-value">—</span></div>
-                    <div class="meta-row"><span class="meta-label">Карта</span><span id="info-map-name" class="meta-value">—</span></div>
-                </div>
-                <div id="info-actions" class="hidden">
-                    <button id="btn-edit-marker" class="btn-action btn-ghost">✏️ Редактировать</button>
-                    <button id="btn-delete-marker" class="btn-action btn-danger">🗑️ Удалить</button>
-                </div>
+
+            <div id="catalog-grid" class="catalog-grid">
+                <!-- Генерируется JS -->
             </div>
         </div>
-    </aside>
+    </div>
 
     <!-- ADMIN LOGIN -->
     <div id="admin-modal" class="modal hidden">
