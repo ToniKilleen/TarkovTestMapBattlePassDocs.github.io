@@ -102,54 +102,81 @@ const ICON_CONFIG = {
         icon: 'images/icons/findocs.png',
         emoji: '📃',
         color: '#f1c40f',
-        label: 'Финансовая документация'
+        label: 'Финансовая документация',
+        spawns: ['customs', 'interchange', 'streets'],
+        battlePass: 'Нужно для уровней 1-15 Battle Pass'
     },
     lpihvk: {
         icon: 'images/icons/lpihvk.png',
         emoji: '📋',
         color: '#3498db',
-        label: 'Личные данные ЧВК'
+        label: 'Личные данные ЧВК',
+        spawns: ['groundzero'],
+        battlePass: 'Эпицентр - основной фарм'
     },
     proectdocs: {
         icon: 'images/icons/proectdocs.png',
         emoji: '📐',
         color: '#2ecc71',
-        label: 'Проектная документация'
+        label: 'Проектная документация',
+        spawns: ['factory'],
+        battlePass: 'Только Завод'
     },
     texdocs: {
         icon: 'images/icons/texdocs.png',
         emoji: '📏',
         color: '#e67e22',
-        label: 'Чертежи и тех. документация'
+        label: 'Чертежи и тех. документация',
+        spawns: ['factory', 'laboratory'],
+        battlePass: 'Завод + Лаборатория'
     },
     testdocs: {
         icon: 'images/icons/testdock.png',
         emoji: '🧪',
         color: '#9b59b6',
-        label: 'Тестовая документация'
+        label: 'Тестовая документация',
+        spawns: ['laboratory', 'labyrinth'],
+        battlePass: 'Лаба и Лабиринт'
     },
     polsdocs: {
         icon: 'images/icons/polsdocs.png',
         emoji: '📖',
         color: '#1abc9c',
-        label: 'Пользовательская документация'
+        label: 'Пользовательская документация',
+        spawns: ['streets', 'customs', 'woods'],
+        battlePass: 'Улицы - лучший шанс'
     },
     meddocs: {
         icon: 'images/icons/meddocs.png',
         emoji: '💊',
         color: '#e91e63',
-        label: 'Медицинская документация'
+        label: 'Медицинская документация',
+        spawns: ['groundzero', 'shoreline', 'lighthouse'],
+        battlePass: 'Эпицентр основной'
     },
     expdocs: {
         icon: 'images/icons/expdocs.png',
         emoji: '🔧',
         color: '#ff9800',
-        label: 'Эксплуатационная документация'
+        label: 'Эксплуатационная документация',
+        spawns: ['interchange', 'reserve', 'icebreaker'],
+        battlePass: 'Развязка и Резерв'
     },
     secretdocs: {
         icon: 'images/icons/secretdocs.png',
         emoji: '🔒',
         color: '#e74c3c',
-        label: 'Секретная документация'
+        label: 'Секретная документация',
+        spawns: ['laboratory', 'reserve', 'lighthouse', 'labyrinth'],
+        battlePass: 'Самая редкая, фарми Лабу'
     }
 };
+
+// Для быстрого поиска: какие доки на какой карте
+const MAP_SPAWNS = {};
+Object.keys(ICON_CONFIG).forEach(cat => {
+    (ICON_CONFIG[cat].spawns || []).forEach(mapId => {
+        if (!MAP_SPAWNS[mapId]) MAP_SPAWNS[mapId] = [];
+        MAP_SPAWNS[mapId].push(cat);
+    });
+});

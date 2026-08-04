@@ -36,6 +36,7 @@
             setupScreenshotPaste();
             setupVisibilityDetection();
             initVersionSystem();
+            loadDailyLimit();
             switchMap(MAPS_CONFIG[0].id);
             restoreSession();
             setTimeout(handleUrlParams, 500);
@@ -402,10 +403,12 @@
                     </div>`;
                 }).join('');
 
+            const spawnsTags = (cfg.spawns || []).map(mid => `<span class="catalog-spawn-tag">${escapeHtml(getMapNameById(mid))}</span>`).join('');
+            const spawnsBlock = `<div class="catalog-cat-spawns"><span style="font-size:10px;color:var(--text-muted);margin-right:4px">ФАРМ:</span>${spawnsTags}</div>`;
             card.innerHTML = `<div class="catalog-cat-header">
                 <div class="catalog-cat-icon">${getCategoryIconHtml(cat)}</div>
                 <div class="catalog-cat-info"><div class="catalog-cat-title">${cfg.label}</div>
-                <div class="catalog-cat-count">${items.length} ${plural(items.length, 'точка', 'точки', 'точек')}</div></div>
+                <div class="catalog-cat-count">${items.length} ${plural(items.length, 'точка', 'точки', 'точек')}</div>${spawnsBlock}</div>
                 </div><div class="catalog-locations">${locationsHtml}</div>`;
             grid.appendChild(card);
         });
@@ -751,10 +754,11 @@
             const cfg = ICON_CONFIG[cat];
             const label = document.createElement('label');
             label.className = 'filter-item';
+            const spawnsHtml = `<div class="filter-spawns">${renderSpawnsTags(cfg.spawns)}</div>`;
             label.innerHTML = `<input type="checkbox" data-category="${cat}" checked>
                 <span class="filter-icon">${getCategoryIconHtml(cat)}</span>
                 <span class="filter-label">${cfg.label}</span>
-                <span class="filter-count" id="count-${cat}">0</span>`;
+                <span class="filter-count" id="count-${cat}">0</span>${spawnsHtml}`;
             container.appendChild(label);
         });
         container.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.addEventListener('change', renderMarkers));
@@ -825,6 +829,20 @@
         $('info-text').textContent = data.description || 'Нет описания';
         $('info-coords').textContent = `${data.lat.toFixed(0)}, ${data.lng.toFixed(0)}`;
         $('info-map-name').textContent = mapCfg ? mapCfg.name : mapId;
+
+        // Show farm spawns for this category
+        const existingSpawns = document.getElementById('info-spawns-box');
+        if (existingSpawns) existingSpawns.remove();
+        const spawns = iconCfg.spawns || [];
+        if (spawns.length > 0) {
+            const spawnsBox = document.createElement('div');
+            spawnsBox.id = 'info-spawns-box';
+            spawnsBox.className = 'info-spawns';
+            const tags = spawns.map(mid => `<span class="info-spawn-tag">${escapeHtml(getMapNameById(mid))}</span>`).join('');
+            spawnsBox.innerHTML = `<div class="info-spawns-title">📍 Где фармить этот тип (Kord Breach)</div><div class="info-spawns-list">${tags}</div>${iconCfg.battlePass ? `<div style="margin-top:6px;font-size:11px;color:var(--text-dim)">${escapeHtml(iconCfg.battlePass)}</div>` : ''}`;
+            const meta = $('info-meta');
+            meta.insertAdjacentElement('afterend', spawnsBox);
+        }
 
         const suggBadge = $('info-suggestion-badge');
         if (type === 'suggestion') {
@@ -1145,6 +1163,135 @@
         setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.classList.add('hidden'), 300); }, 2500);
     }
 
+    // ===== FARM HINTS (пункт 2) =====
+    function getMapNameById(mapId) {
+        const cfg = MAPS_CONFIG.find(m => m.id === mapId);
+        return cfg ? cfg.name : mapId;
+    }
+    function getSpawnsForCategory(cat) {
+        const cfg = ICON_CONFIG[cat];
+        return cfg && cfg.spawns ? cfg.spawns : [];
+    }
+    function renderSpawnsTags(spawns) {
+        if (!spawns || spawns.length === 0) return '<span class="filter-spawn-tag">Все карты</span>';
+        return spawns.map(mid => `<span class="filter-spawn-tag">${escapeHtml(getMapNameById(mid))}</span>`).join('');
+    }
+
+    // ===== DAILY LIMIT (пункт 3) =====
+    const DAILY_LIMIT_KEY = 'kord_daily_limit';
+    let dailyData = { date: null, count: 0, max: 15 };
+
+    function loadDailyLimit() {
+        const today = new Date().toISOString().split('T')[0];
+        try {
+            const saved = JSON.parse(localStorage.getItem(DAILY_LIMIT_KEY) || 'null');
+            if (saved && saved.date === today) {
+                dailyData = saved;
+            } else {
+                dailyData = { date: today, count: 0, max: saved ? saved.max : 15 };
+                saveDailyLimit();
+            }
+        } catch(e) {
+            dailyData = { date: today, count: 0, max: 15 };
+        }
+        updateDailyLimitUI();
+    }
+
+    function saveDailyLimit() {
+        localStorage.setItem(DAILY_LIMIT_KEY, JSON.stringify(dailyData));
+    }
+
+    function updateDailyLimitUI() {
+        const countEl = $('daily-limit-count');
+        const progressEl = $('daily-limit-progress');
+        const resetEl = $('daily-limit-reset');
+        if (!countEl || !progressEl) return;
+
+        const max = dailyData.max || 15;
+        const count = dailyData.count || 0;
+        const pct = Math.min(100, (count / max) * 100);
+
+        countEl.textContent = `${count} / ${max}`;
+        progressEl.style.width = pct + '%';
+        progressEl.classList.toggle('full', count >= max);
+
+        if (resetEl) {
+            const now = new Date();
+            const midnight = new Date();
+            midnight.setHours(24,0,0,0);
+            const diffMs = midnight - now;
+            const hours = Math.floor(diffMs / 3600000);
+            const mins = Math.floor((diffMs % 3600000)/60000);
+            resetEl.textContent = `сброс через ${hours}ч ${mins}м`;
+        }
+
+        if (count >= max) {
+            countEl.style.color = 'var(--danger)';
+            if (count === max) notify('⛔ Дневной лимит достигнут! Иди в рейд завтра.');
+        } else if (count >= max * 0.8) {
+            countEl.style.color = '#f39c12';
+        } else {
+            countEl.style.color = 'var(--accent)';
+        }
+    }
+
+    function changeDailyCount(delta) {
+        const today = new Date().toISOString().split('T')[0];
+        if (dailyData.date !== today) {
+            dailyData.date = today;
+            dailyData.count = 0;
+        }
+        dailyData.count = Math.max(0, Math.min(dailyData.max, dailyData.count + delta));
+        saveDailyLimit();
+        updateDailyLimitUI();
+    }
+
+    // ===== CALCULATOR CLASSIFIED (пункт 5) =====
+    function renderCalculatorInputs() {
+        const container = $('calc-inputs');
+        if (!container) return;
+        container.innerHTML = '';
+        Object.keys(ICON_CONFIG).forEach(cat => {
+            const cfg = ICON_CONFIG[cat];
+            const row = document.createElement('div');
+            row.className = 'calc-input-row';
+            row.innerHTML = `
+                <label>${getCategoryIconHtml(cat)} ${escapeHtml(cfg.label)}</label>
+                <input type="number" min="0" max="99" value="0" data-cat="${cat}" class="calc-input">
+            `;
+            container.appendChild(row);
+        });
+        container.querySelectorAll('.calc-input').forEach(inp => {
+            inp.addEventListener('input', updateCalculatorResult);
+        });
+        const priceInput = $('calc-price');
+        if (priceInput) priceInput.addEventListener('input', updateCalculatorResult);
+        updateCalculatorResult();
+    }
+
+    function updateCalculatorResult() {
+        let total = 0;
+        document.querySelectorAll('.calc-input').forEach(inp => {
+            const v = parseInt(inp.value) || 0;
+            total += Math.max(0, v);
+        });
+        const price = parseInt($('calc-price')?.value) || 150;
+        const classified = total;
+        const tarcoins = classified * price;
+
+        const totalEl = $('calc-total-missing');
+        const classEl = $('calc-classified');
+        const tarEl = $('calc-tarcoins');
+        if (totalEl) totalEl.textContent = total;
+        if (classEl) classEl.textContent = classified;
+        if (tarEl) tarEl.textContent = tarcoins.toLocaleString('ru-RU');
+    }
+
+    function openCalculatorModal() {
+        renderCalculatorInputs();
+        $('calculator-modal').classList.remove('hidden');
+    }
+
     // ===== EVENTS =====
     function setupEventListeners() {
         $('view-map').addEventListener('click', () => switchView('map'));
@@ -1207,11 +1354,45 @@
         $('btn-close-version').addEventListener('click', () => $('version-modal').classList.add('hidden'));
         $('version-badge').addEventListener('click', () => openVersionModal());
 
+        // Daily limit
+        $('btn-daily-plus').addEventListener('click', () => { changeDailyCount(1); notify('📅 +1 к лимиту'); });
+        $('btn-daily-minus').addEventListener('click', () => { changeDailyCount(-1); });
+        $('btn-daily-reset').addEventListener('click', () => {
+            if (confirm('Сбросить дневной счетчик?')) { dailyData.count = 0; saveDailyLimit(); updateDailyLimitUI(); notify('↺ Лимит сброшен'); }
+        });
+        $('btn-daily-settings').addEventListener('click', () => $('daily-settings-modal').classList.remove('hidden'));
+        $('btn-close-daily-settings').addEventListener('click', () => $('daily-settings-modal').classList.add('hidden'));
+        $('btn-cancel-daily-settings').addEventListener('click', () => $('daily-settings-modal').classList.add('hidden'));
+        $('daily-max-select').addEventListener('change', (e) => {
+            $('daily-custom-group').style.display = e.target.value === 'custom' ? 'block' : 'none';
+        });
+        $('daily-settings-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const sel = $('daily-max-select').value;
+            let max = 15;
+            if (sel === 'custom') {
+                max = parseInt($('daily-custom-input').value) || 15;
+            } else {
+                max = parseInt(sel) || 15;
+            }
+            dailyData.max = Math.max(1, Math.min(100, max));
+            saveDailyLimit();
+            updateDailyLimitUI();
+            $('daily-settings-modal').classList.add('hidden');
+            notify(`✅ Лимит установлен: ${dailyData.max}`);
+        });
+
+        // Calculator
+        $('btn-calculator').addEventListener('click', () => openCalculatorModal());
+        $('btn-close-calculator').addEventListener('click', () => $('calculator-modal').classList.add('hidden'));
+
         document.querySelectorAll('.modal-overlay').forEach(o => {
             o.addEventListener('click', () => {
                 $('login-modal').classList.add('hidden');
                 $('review-modal').classList.add('hidden');
                 $('version-modal').classList.add('hidden');
+                $('calculator-modal').classList.add('hidden');
+                $('daily-settings-modal').classList.add('hidden');
             });
         });
 
@@ -1221,6 +1402,8 @@
                 $('login-modal').classList.add('hidden');
                 $('review-modal').classList.add('hidden');
                 $('version-modal').classList.add('hidden');
+                $('calculator-modal').classList.add('hidden');
+                $('daily-settings-modal').classList.add('hidden');
                 closeInfoPanel();
             }
             // F5 = ручное обновление (перехватываем стандартный F5)

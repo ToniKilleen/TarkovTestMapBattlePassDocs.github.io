@@ -62,6 +62,28 @@
                 <button id="btn-suggest-marker" class="btn-action btn-suggest"><span class="btn-icon">💡</span> Предложить точку</button>
             </div>
             <div class="filter-footer">
+                <!-- Daily limit Kord Breach -->
+                <div id="daily-limit-box" class="daily-limit-box">
+                    <div class="daily-limit-header">
+                        <span class="daily-limit-label">📅 ДНЕВНОЙ ЛИМИТ</span>
+                        <button id="btn-daily-settings" class="btn-mini" title="Настроить лимит">⚙</button>
+                    </div>
+                    <div class="daily-limit-bar-wrap">
+                        <div class="daily-limit-bar">
+                            <div id="daily-limit-progress" class="daily-limit-progress" style="width: 0%"></div>
+                        </div>
+                        <div class="daily-limit-stats">
+                            <span id="daily-limit-count" class="daily-limit-count">0 / 15</span>
+                            <span id="daily-limit-reset" class="daily-limit-reset">сброс в 00:00</span>
+                        </div>
+                    </div>
+                    <div class="daily-limit-actions">
+                        <button id="btn-daily-minus" class="btn-action btn-ghost btn-small daily-btn">−1</button>
+                        <button id="btn-daily-plus" class="btn-action btn-primary btn-small daily-btn">+1 нашел</button>
+                        <button id="btn-daily-reset" class="btn-action btn-ghost btn-small daily-btn">↺</button>
+                    </div>
+                </div>
+
                 <div class="coords-display">
                     <span class="coords-label">КУРСОР</span>
                     <span id="cursor-coords" class="coords-value">—</span>
@@ -70,6 +92,9 @@
                     <span class="autorefresh-dot"></span>
                     <span class="autorefresh-text">Автообновление</span>
                 </div>
+                <button id="btn-calculator" class="btn-action btn-ghost btn-small" style="margin-top:8px">
+                    🧮 Калькулятор Classified
+                </button>
             </div>
         </aside>
 
@@ -254,6 +279,61 @@
                 <button id="btn-close-version" class="close-btn">&times;</button>
             </div>
             <div id="version-body" class="version-body"></div>
+        </div>
+    </div>
+
+    <!-- CALCULATOR MODAL -->
+    <div id="calculator-modal" class="modal hidden">
+        <div class="modal-overlay"></div>
+        <div class="modal-content" style="width: 560px">
+            <div class="modal-header">
+                <h2>🧮 Калькулятор Classified Docs</h2>
+                <button id="btn-close-calculator" class="close-btn">&times;</button>
+            </div>
+            <div class="calc-body">
+                <p class="calc-hint">Classified Document — универсальная замена любой документации. Покупается в Expansion Hub за TarCoins. Введи сколько каких доков тебе не хватает:</p>
+                <div id="calc-inputs" class="calc-inputs"></div>
+                <div class="calc-settings">
+                    <label>Цена 1 Classified (TarCoins): <input type="number" id="calc-price" value="150" min="1" style="width: 80px"></label>
+                </div>
+                <div id="calc-result" class="calc-result">
+                    <div class="calc-result-row"><span>Всего не хватает доков:</span><span id="calc-total-missing">0</span></div>
+                    <div class="calc-result-row highlight"><span>Нужно Classified:</span><span id="calc-classified">0</span></div>
+                    <div class="calc-result-row highlight"><span>Нужно TarCoins:</span><span id="calc-tarcoins">0</span></div>
+                </div>
+                <p class="calc-footnote">💡 Совет: Фарми доки по подсказкам "Где фармить" в фильтрах — меньше тратишь TarCoins.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- DAILY SETTINGS MODAL -->
+    <div id="daily-settings-modal" class="modal hidden">
+        <div class="modal-overlay"></div>
+        <div class="modal-content" style="width: 400px">
+            <div class="modal-header">
+                <h2>Настройка лимита</h2>
+                <button id="btn-close-daily-settings" class="close-btn">&times;</button>
+            </div>
+            <form id="daily-settings-form" style="padding: 20px 24px">
+                <div class="form-group">
+                    <label>Макс. доков в день (зависит от режима):</label>
+                    <select id="daily-max-select">
+                        <option value="10">10 — PvE / легкий</option>
+                        <option value="15" selected>15 — Стандарт PvP (дефолт)</option>
+                        <option value="20">20 — PvP Seasonal</option>
+                        <option value="25">25 — Хардкор модификаторы</option>
+                        <option value="custom">Свое значение</option>
+                    </select>
+                </div>
+                <div class="form-group" id="daily-custom-group" style="display:none">
+                    <input type="number" id="daily-custom-input" placeholder="Например 18" min="1" max="100">
+                </div>
+                <p style="color: var(--text-dim); font-size: 12px; margin-bottom: 16px;">Лимит общий на все режимы. Сбрасывается в 00:00 по МСК. Прогресс сохраняется в браузере.</p>
+                <div class="modal-buttons">
+                    <button type="button" id="btn-cancel-daily-settings" class="btn-action btn-ghost">Отмена</button>
+                    <button type="submit" class="btn-action btn-primary">Сохранить</button>
+                </div>
+            </form>
         </div>
     </div>
 
