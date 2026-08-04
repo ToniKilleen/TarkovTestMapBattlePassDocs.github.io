@@ -103,10 +103,20 @@ body {
 .filter-item:hover { background: var(--bg-hover); }
 .filter-item input[type="checkbox"] { display: none; }
 
+/* Иконка в фильтре — теперь для картинок */
 .filter-icon {
-    width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center;
-    justify-content: center; font-size: 14px; opacity: 0.9; transition: all var(--transition); flex-shrink: 0;
+    width: 32px; height: 32px; border-radius: 6px; display: flex; align-items: center;
+    justify-content: center; opacity: 0.9; transition: all var(--transition); flex-shrink: 0;
+    background: var(--bg-dark); border: 1px solid var(--border);
+    overflow: hidden;
 }
+.filter-icon img {
+    width: 22px; height: 22px; object-fit: contain;
+}
+.filter-icon .emoji-fallback {
+    font-size: 16px;
+}
+
 .filter-item input:not(:checked) ~ .filter-icon { opacity: 0.3; filter: grayscale(1); }
 .filter-item input:not(:checked) ~ .filter-label { color: var(--text-muted); text-decoration: line-through; }
 
@@ -180,6 +190,8 @@ body {
     background: var(--bg-dark); border-radius: 20px; font-size: 12px; font-weight: 700;
     text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; border: 1px solid var(--border);
 }
+.info-badge img { width: 16px; height: 16px; object-fit: contain; }
+
 #info-title { font-size: 22px; color: var(--text); margin-bottom: 16px; font-weight: 700; line-height: 1.3; }
 #info-description {
     margin-bottom: 20px; line-height: 1.7; font-size: 14px; color: var(--text-dim);
@@ -223,6 +235,149 @@ body {
 .marker-form-body textarea:focus,
 .marker-form-body select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
 .marker-form-body textarea { resize: vertical; min-height: 60px; }
+
+/* ===== КАСТОМНЫЙ DROPDOWN КАТЕГОРИЙ С ИКОНКАМИ ===== */
+.category-picker {
+    position: relative;
+    width: 100%;
+}
+
+.category-btn {
+    width: 100%;
+    padding: 8px 12px;
+    background: var(--bg-dark);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--font-main);
+    font-size: 13px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: border-color var(--transition);
+}
+
+.category-btn:hover {
+    border-color: var(--accent-dim);
+}
+
+.category-btn.open {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+.category-btn-icon {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-card);
+    border-radius: 4px;
+    flex-shrink: 0;
+    overflow: hidden;
+}
+
+.category-btn-icon img {
+    width: 18px;
+    height: 18px;
+    object-fit: contain;
+}
+
+.category-btn-icon .emoji-fallback {
+    font-size: 14px;
+}
+
+.category-btn-icon:empty {
+    background: var(--bg-hover);
+}
+
+.category-btn-label {
+    flex: 1;
+    text-align: left;
+    color: var(--text);
+}
+
+.category-btn-label.placeholder {
+    color: var(--text-dim);
+}
+
+.category-btn-arrow {
+    color: var(--text-dim);
+    font-size: 10px;
+    transition: transform var(--transition);
+}
+
+.category-btn.open .category-btn-arrow {
+    transform: rotate(180deg);
+}
+
+.category-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: var(--bg-card);
+    border: 1px solid var(--accent);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-lg);
+    z-index: 100;
+    max-height: 300px;
+    overflow-y: auto;
+    padding: 4px;
+}
+
+.category-dropdown.hidden {
+    display: none;
+}
+
+.category-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background var(--transition);
+}
+
+.category-option:hover {
+    background: var(--bg-hover);
+}
+
+.category-option.selected {
+    background: var(--accent-glow);
+}
+
+.category-option-icon {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-dark);
+    border-radius: 4px;
+    flex-shrink: 0;
+    overflow: hidden;
+}
+
+.category-option-icon img {
+    width: 18px;
+    height: 18px;
+    object-fit: contain;
+}
+
+.category-option-icon .emoji-fallback {
+    font-size: 14px;
+}
+
+.category-option-label {
+    flex: 1;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+}
 
 .form-coords-box {
     display: flex; align-items: center; gap: 10px; padding: 10px 12px;

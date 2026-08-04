@@ -3,7 +3,6 @@
 
     const ADMIN_PASSWORD = 'tarkov2024';
 
-    // ===== STATE =====
     let map = null;
     let imageOverlay = null;
     let currentMapId = null;
@@ -12,8 +11,6 @@
     let isAdminMode = false;
     let isAddingMarker = false;
     let editingMarkerId = null;
-
-    // Кэш проверенных иконок (чтобы не проверять каждый раз)
     let iconCache = {};
 
     const $ = id => document.getElementById(id);
@@ -23,13 +20,14 @@
         preloadIcons().then(() => {
             loadMarkers();
             renderMapTabs();
+            renderFilterItems();
+            renderCategoryDropdown();
             setupEventListeners();
             switchMap(MAPS_CONFIG[0].id);
         });
     }
 
-    // ===== PRELOAD ICONS =====
-    // Проверяем какие иконки реально существуют
+    // ===== ПРЕДЗАГРУЗКА ИКОНОК =====
     function preloadIcons() {
         const promises = Object.keys(ICON_CONFIG).map(cat => {
             return new Promise(resolve => {
@@ -42,12 +40,11 @@
                 const img = new Image();
                 img.onload = () => {
                     iconCache[cat] = true;
-                    console.log(`✅ Иконка [${cat}]: ${cfg.icon}`);
                     resolve();
                 };
                 img.onerror = () => {
                     iconCache[cat] = false;
-                    console.warn(`⚠️ Иконка [${cat}] не найдена: ${cfg.icon} — используется эмодзи`);
+                    console.warn(`⚠️ Иконка [${cat}] не найдена: ${cfg.icon}`);
                     resolve();
                 };
                 img.src = cfg.icon;
@@ -56,21 +53,90 @@
         return Promise.all(promises);
     }
 
-    // ===== СОЗДАНИЕ HTML ДЛЯ ИКОНКИ МАРКЕРА =====
-    function createMarkerIconHtml(category) {
-        const cfg = ICON_CONFIG[category] || ICON_CONFIG.loot;
-        const hasCustomIcon = iconCache[category];
+    // ===== HTML для иконки категории (используется везде) =====
+    function getCategoryIconHtml(category, size) {
+        const cfg = ICON_CONFIG[category];
+        if (!cfg) return '';
 
-        let innerHtml;
-        if (hasCustomIcon) {
-            // Кастомная PNG иконка
-            innerHtml = `<img src="${cfg.icon}" alt="${cfg.label}" style="width:20px;height:20px;object-fit:contain;">`;
+        if (iconCache[category]) {
+            return `<img src="${cfg.icon}" alt="${cfg.label}">`;
         } else {
-            // Fallback на эмодзи
-            innerHtml = `<span style="font-size:15px;line-height:1;">${cfg.emoji}</span>`;
+            return `<span class="emoji-fallback">${cfg.emoji || '📌'}</span>`;
         }
+    }
 
-        return `<div class="marker-icon-wrapper marker-cat-${category}">${innerHtml}</div>`;
+    // ===== АВТОГЕНЕРАЦИЯ ФИЛЬТРОВ =====
+    function renderFilterItems() {
+        const container = $('filter-group');
+        container.innerHTML = '';
+
+        Object.keys(ICON_CONFIG).forEach(cat => {
+            const cfg = ICON_CONFIG[cat];
+            const label = document.createElement('label');
+            label.className = 'filter-item';
+            label.innerHTML = `
+                <input type="checkbox" data-category="${cat}" checked>
+                <span class="filter-icon">${getCategoryIconHtml(cat)}</span>
+                <span class="filter-label">${cfg.label}</span>
+                <span class="filter-count" id="count-${cat}">0</span>
+            `;
+            container.appendChild(label);
+        });
+
+        // Привязываем события к чекбоксам
+        container.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+            cb.addEventListener('change', renderMarkers);
+        });
+    }
+
+    // ===== АВТОГЕНЕРАЦИЯ DROPDOWN КАТЕГОРИЙ В ФОРМЕ =====
+    function renderCategoryDropdown() {
+        const dropdown = $('form-category-dropdown');
+        dropdown.innerHTML = '';
+
+        Object.keys(ICON_CONFIG).forEach(cat => {
+            const cfg = ICON_CONFIG[cat];
+            const option = document.createElement('div');
+            option.className = 'category-option';
+            option.dataset.category = cat;
+            option.innerHTML = `
+                <span class="category-option-icon">${getCategoryIconHtml(cat)}</span>
+                <span class="category-option-label">${cfg.label}</span>
+            `;
+            option.addEventListener('click', () => selectCategory(cat));
+            dropdown.appendChild(option);
+        });
+    }
+
+    function selectCategory(cat) {
+        const cfg = ICON_CONFIG[cat];
+        $('form-category').value = cat;
+
+        const btn = $('form-category-btn');
+        btn.querySelector('.category-btn-icon').innerHTML = getCategoryIconHtml(cat);
+        const labelEl = btn.querySelector('.category-btn-label');
+        labelEl.textContent = cfg.label;
+        labelEl.classList.remove('placeholder');
+
+        $('form-category-dropdown').classList.add('hidden');
+        btn.classList.remove('open');
+
+        // Отметить выбранный
+        document.querySelectorAll('.category-option').forEach(opt => {
+            opt.classList.toggle('selected', opt.dataset.category === cat);
+        });
+    }
+
+    function resetCategoryPicker() {
+        $('form-category').value = '';
+        const btn = $('form-category-btn');
+        btn.querySelector('.category-btn-icon').innerHTML = '';
+        const labelEl = btn.querySelector('.category-btn-label');
+        labelEl.textContent = 'Выбрать...';
+        labelEl.classList.add('placeholder');
+        $('form-category-dropdown').classList.add('hidden');
+        btn.classList.remove('open');
+        document.querySelectorAll('.category-option').forEach(opt => opt.classList.remove('selected'));
     }
 
     // ===== MARKERS =====
@@ -93,7 +159,6 @@
         localStorage.setItem('tarkov_markers_local', JSON.stringify(markers));
     }
 
-    // ===== MAP TABS =====
     function renderMapTabs() {
         $('map-selector').innerHTML = '';
         MAPS_CONFIG.forEach(cfg => {
@@ -106,7 +171,6 @@
         });
     }
 
-    // ===== SWITCH MAP =====
     function switchMap(mapId) {
         const config = MAPS_CONFIG.find(m => m.id === mapId);
         if (!config) return;
@@ -121,7 +185,6 @@
         loadImageAndInitMap(config);
     }
 
-    // ===== LOAD IMAGE =====
     function loadImageAndInitMap(config) {
         const mapDiv = $('map');
         mapDiv.style.opacity = '0.3';
@@ -144,7 +207,6 @@
         img.src = config.image;
     }
 
-    // ===== LEAFLET INIT =====
     function initLeafletMap(config, imageUrl, imageBounds) {
         if (map) { map.remove(); map = null; }
         $('map').innerHTML = '';
@@ -178,7 +240,6 @@
         updateFilterCounts();
     }
 
-    // ===== RENDER MARKERS =====
     function renderMarkers() {
         if (!markersLayer) return;
         markersLayer.clearLayers();
@@ -187,7 +248,7 @@
         const filtered = markers.filter(m => m.mapId === currentMapId && active.includes(m.category));
 
         filtered.forEach(data => {
-            const iconHtml = createMarkerIconHtml(data.category);
+            const iconHtml = `<div class="marker-icon-wrapper marker-cat-${data.category}">${getCategoryIconHtml(data.category)}</div>`;
 
             const customIcon = L.divIcon({
                 html: iconHtml,
@@ -231,23 +292,14 @@
         renderMarkers();
     }
 
-    // ===== INFO PANEL =====
     function openInfoPanel(data) {
-        const iconCfg = ICON_CONFIG[data.category] || ICON_CONFIG.loot;
+        const iconCfg = ICON_CONFIG[data.category] || {};
         const mapCfg = MAPS_CONFIG.find(m => m.id === data.mapId);
 
-        // Иконка в info badge
-        let badgeIcon;
-        if (iconCache[data.category]) {
-            badgeIcon = `<img src="${iconCfg.icon}" style="width:16px;height:16px;vertical-align:middle;margin-right:4px;">`;
-        } else {
-            badgeIcon = iconCfg.emoji;
-        }
-
         $('info-title').textContent = data.name;
-        $('info-category').innerHTML = `${badgeIcon} ${iconCfg.label}`;
-        $('info-category').style.color = iconCfg.color;
-        $('info-category').style.borderColor = iconCfg.color;
+        $('info-category').innerHTML = `${getCategoryIconHtml(data.category)} ${iconCfg.label || ''}`;
+        $('info-category').style.color = iconCfg.color || '';
+        $('info-category').style.borderColor = iconCfg.color || '';
         $('info-text').textContent = data.description || 'Нет описания';
         $('info-coords').textContent = `${data.lat.toFixed(0)}, ${data.lng.toFixed(0)}`;
         $('info-map-name').textContent = mapCfg ? mapCfg.name : data.mapId;
@@ -273,7 +325,6 @@
         $('info-panel').classList.add('hidden');
     }
 
-    // ===== ADMIN =====
     function showAdminLogin() {
         if (isAdminMode) {
             isAdminMode = false;
@@ -307,7 +358,6 @@
         }
     }
 
-    // ===== MAP CLICK =====
     function onMapClick(e) {
         if (!isAddingMarker) return;
 
@@ -326,7 +376,6 @@
         }).addTo(map);
     }
 
-    // ===== ADD / EDIT / DELETE =====
     function startAddingMarker() {
         if (!isAdminMode) return;
         isAddingMarker = true;
@@ -334,6 +383,9 @@
 
         $('marker-form').reset();
         $('form-id').value = '';
+        $('form-lat').value = '';
+        $('form-lng').value = '';
+        resetCategoryPicker();
 
         const hint = $('form-coords-hint');
         hint.classList.remove('selected');
@@ -351,6 +403,8 @@
         $('marker-form-panel').classList.add('hidden');
         $('adding-hint').classList.add('hidden');
         $('map').style.cursor = '';
+        $('form-category-dropdown').classList.add('hidden');
+        $('form-category-btn').classList.remove('open');
         if (window._tempMarker && map) {
             map.removeLayer(window._tempMarker);
             window._tempMarker = null;
@@ -368,11 +422,11 @@
 
         $('form-id').value = data.id;
         $('form-name').value = data.name;
-        $('form-category').value = data.category;
         $('form-description').value = data.description || '';
         $('form-screenshot').value = data.screenshot || '';
         $('form-lat').value = data.lat;
         $('form-lng').value = data.lng;
+        selectCategory(data.category);
 
         const hint = $('form-coords-hint');
         hint.classList.add('selected');
@@ -389,6 +443,12 @@
         e.preventDefault();
         const lat = parseFloat($('form-lat').value);
         const lng = parseFloat($('form-lng').value);
+        const category = $('form-category').value;
+
+        if (!category) {
+            notify('⚠️ Выберите категорию!');
+            return;
+        }
 
         if (isNaN(lat) || isNaN(lng)) {
             notify('⚠️ Сначала кликните на карту!');
@@ -399,7 +459,7 @@
             id: $('form-id').value || generateId(),
             mapId: currentMapId,
             name: $('form-name').value.trim(),
-            category: $('form-category').value,
+            category: category,
             lat, lng,
             description: $('form-description').value.trim(),
             screenshot: $('form-screenshot').value.trim()
@@ -431,7 +491,6 @@
         notify('🗑️ Точка удалена');
     }
 
-    // ===== EXPORT / IMPORT =====
     function exportMarkers() {
         const blob = new Blob([JSON.stringify(markers, null, 2)], { type: 'application/json' });
         const a = document.createElement('a');
@@ -461,7 +520,6 @@
         e.target.value = '';
     }
 
-    // ===== NOTIFICATION =====
     function notify(text) {
         const el = $('notification');
         $('notification-text').textContent = text;
@@ -478,11 +536,7 @@
         return currentMapId + '_' + Date.now().toString(36) + '_' + Math.random().toString(36).substr(2, 5);
     }
 
-    // ===== EVENTS =====
     function setupEventListeners() {
-        document.querySelectorAll('.filter-group input[type="checkbox"]').forEach(cb => {
-            cb.addEventListener('change', renderMarkers);
-        });
         $('btn-toggle-all').addEventListener('click', toggleAllFilters);
 
         $('close-info').addEventListener('click', closeInfoPanel);
@@ -498,6 +552,23 @@
         $('marker-form').addEventListener('submit', saveMarker);
         $('btn-cancel-form').addEventListener('click', stopAddingMarker);
         $('btn-close-form').addEventListener('click', stopAddingMarker);
+
+        // Кастомный dropdown категорий
+        $('form-category-btn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            const dropdown = $('form-category-dropdown');
+            const btn = $('form-category-btn');
+            dropdown.classList.toggle('hidden');
+            btn.classList.toggle('open');
+        });
+
+        // Закрытие dropdown при клике вне его
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.category-picker')) {
+                $('form-category-dropdown').classList.add('hidden');
+                $('form-category-btn').classList.remove('open');
+            }
+        });
 
         document.querySelectorAll('.modal-overlay').forEach(o => {
             o.addEventListener('click', () => $('admin-modal').classList.add('hidden'));

@@ -35,62 +35,9 @@
             <h3>ФИЛЬТРЫ</h3>
             <button id="btn-toggle-all" class="btn-mini" title="Вкл/Выкл все">👁</button>
         </div>
-        <div class="filter-group">
-            <label class="filter-item">
-                <input type="checkbox" data-category="findocs" checked>
-                <span class="filter-icon" style="background:#f1c40f">📃</span>
-                <span class="filter-label">Финансовая</span>
-                <span class="filter-count" id="count-findocs">0</span>
-            </label>
-            <label class="filter-item">
-                <input type="checkbox" data-category="lpihvk" checked>
-                <span class="filter-icon" style="background:#3498db">📋</span>
-                <span class="filter-label">Личные ЧВК</span>
-                <span class="filter-count" id="count-lpihvk">0</span>
-            </label>
-            <label class="filter-item">
-                <input type="checkbox" data-category="proectdocs" checked>
-                <span class="filter-icon" style="background:#2ecc71">📐</span>
-                <span class="filter-label">Проектная</span>
-                <span class="filter-count" id="count-proectdocs">0</span>
-            </label>
-            <label class="filter-item">
-                <input type="checkbox" data-category="texdocs" checked>
-                <span class="filter-icon" style="background:#e67e22">📏</span>
-                <span class="filter-label">Чертежи и тех.</span>
-                <span class="filter-count" id="count-texdocs">0</span>
-            </label>
-            <label class="filter-item">
-                <input type="checkbox" data-category="testdocs" checked>
-                <span class="filter-icon" style="background:#9b59b6">🧪</span>
-                <span class="filter-label">Тестовая</span>
-                <span class="filter-count" id="count-testdocs">0</span>
-            </label>
-            <label class="filter-item">
-                <input type="checkbox" data-category="polsdocs" checked>
-                <span class="filter-icon" style="background:#1abc9c">📖</span>
-                <span class="filter-label">Пользовательская</span>
-                <span class="filter-count" id="count-polsdocs">0</span>
-            </label>
-            <label class="filter-item">
-                <input type="checkbox" data-category="meddocs" checked>
-                <span class="filter-icon" style="background:#e91e63">💊</span>
-                <span class="filter-label">Медицинская</span>
-                <span class="filter-count" id="count-meddocs">0</span>
-            </label>
-            <label class="filter-item">
-                <input type="checkbox" data-category="expdocs" checked>
-                <span class="filter-icon" style="background:#ff9800">🔧</span>
-                <span class="filter-label">Эксплуатационная</span>
-                <span class="filter-count" id="count-expdocs">0</span>
-            </label>
-            <label class="filter-item">
-                <input type="checkbox" data-category="secretdocs" checked>
-                <span class="filter-icon" style="background:#e74c3c">🔒</span>
-                <span class="filter-label">Секретная</span>
-                <span class="filter-count" id="count-secretdocs">0</span>
-            </label>
-        </div>
+        <!-- Фильтры генерируются автоматически из ICON_CONFIG -->
+        <div id="filter-group" class="filter-group"></div>
+
         <div id="admin-tools" class="admin-tools hidden">
             <div class="admin-divider"><span>РЕДАКТИРОВАНИЕ</span></div>
             <button id="btn-add-marker" class="btn-action btn-primary"><span class="btn-icon">+</span> Добавить точку</button>
@@ -127,18 +74,17 @@
                     <input type="text" id="form-name" required placeholder="Документ на столе">
                 </div>
                 <div class="form-group">
-                    <label for="form-category">Категория</label>
-                    <select id="form-category">
-                        <option value="findocs">📃 Финансовая документация</option>
-                        <option value="lpihvk">📋 Личные данные ЧВК</option>
-                        <option value="proectdocs">📐 Проектная документация</option>
-                        <option value="texdocs">📏 Чертежи и тех. документация</option>
-                        <option value="testdocs">🧪 Тестовая документация</option>
-                        <option value="polsdocs">📖 Пользовательская документация</option>
-                        <option value="meddocs">💊 Медицинская документация</option>
-                        <option value="expdocs">🔧 Эксплуатационная документация</option>
-                        <option value="secretdocs">🔒 Секретная документация</option>
-                    </select>
+                    <label>Категория</label>
+                    <!-- Кастомный dropdown с иконками -->
+                    <div id="form-category-picker" class="category-picker">
+                        <button type="button" id="form-category-btn" class="category-btn">
+                            <span class="category-btn-icon"></span>
+                            <span class="category-btn-label">Выбрать...</span>
+                            <span class="category-btn-arrow">▼</span>
+                        </button>
+                        <div id="form-category-dropdown" class="category-dropdown hidden"></div>
+                    </div>
+                    <input type="hidden" id="form-category">
                 </div>
                 <div class="form-group">
                     <label for="form-description">Описание</label>
