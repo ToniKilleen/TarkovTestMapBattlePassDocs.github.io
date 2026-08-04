@@ -1,3 +1,15 @@
+/*
+ * ЭТО ПУБЛИЧНАЯ БАЗА ТОЧЕК.
+ * Все посетители видят эти маркеры.
+ *
+ * Чтобы обновить:
+ * 1. Войдите в режим редактирования (🔒)
+ * 2. Добавьте/измените точки
+ * 3. Нажмите "Экспорт JSON"
+ * 4. Замените содержимое DEFAULT_MARKERS в этом файле
+ * 5. Запушьте на GitHub
+ */
+
 const DEFAULT_MARKERS = [
     {
         id: 'lab_001',
@@ -17,7 +29,7 @@ const DEFAULT_MARKERS = [
         lat: -800,
         lng: 3200,
         description: 'Активируется кнопкой на серверной стойке. После активации — 60 секунд до закрытия.',
-        screenshot: 'images/screenshots/lab_extract_vent.jpg'
+        screenshot: ''
     },
     {
         id: 'lab_003',
@@ -27,7 +39,7 @@ const DEFAULT_MARKERS = [
         lat: -1600,
         lng: 1800,
         description: 'Один из спавнов Санитара. Может появиться с 2-3 охранниками.',
-        screenshot: 'images/screenshots/lab_sanitar.jpg'
+        screenshot: ''
     },
     {
         id: 'cus_001',
@@ -36,8 +48,8 @@ const DEFAULT_MARKERS = [
         category: 'loot',
         lat: -1500,
         lng: 4200,
-        description: 'Отмеченная комната в 3-этажном общежитии. Требуется Marked key. Респавн ценного лута: кейсы, оружие.',
-        screenshot: 'images/screenshots/cus_marked_314.jpg'
+        description: 'Отмеченная комната в 3-этажном общежитии. Требуется Marked key.',
+        screenshot: ''
     },
     {
         id: 'cus_002',
@@ -46,7 +58,7 @@ const DEFAULT_MARKERS = [
         category: 'boss',
         lat: -1400,
         lng: 4100,
-        description: 'Решала спавнит в районе общежитий с 4-6 охранниками. Золотой ТТ всегда при нём.',
-        screenshot: 'images/screenshots/cus_reshala.jpg'
+        description: 'Решала спавнит в районе общежитий с 4-6 охранниками.',
+        screenshot: ''
     }
 ];

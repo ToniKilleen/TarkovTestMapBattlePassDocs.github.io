@@ -5,13 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tarkov Interactive Maps</title>
 
-    <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
-
-    <!-- Custom CSS -->
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -19,31 +14,98 @@
     <!-- ===== HEADER ===== -->
     <header id="header">
         <div class="header-left">
-            <h1>TARKOV MAPS</h1>
-            <span class="version">v0.15</span>
+            <div class="logo">
+                <span class="logo-icon">⚔</span>
+                <div class="logo-text">
+                    <h1>TARKOV</h1>
+                    <span class="logo-sub">INTERACTIVE MAPS</span>
+                </div>
+            </div>
         </div>
         <div class="header-center">
             <div id="map-selector" class="map-tabs"></div>
+        </div>
+        <div class="header-right">
+            <button id="btn-admin-toggle" class="admin-toggle" title="Режим редактирования">
+                🔒
+            </button>
         </div>
     </header>
 
     <!-- ===== FILTER PANEL ===== -->
     <aside id="filter-panel" class="filter-panel">
-        <h3>ФИЛЬТРЫ</h3>
-        <div class="filter-group">
-            <label><input type="checkbox" data-category="loot" checked> 💰 Лут</label>
-            <label><input type="checkbox" data-category="key" checked> 🔑 Ключи</label>
-            <label><input type="checkbox" data-category="extract" checked> 🚪 Выходы</label>
-            <label><input type="checkbox" data-category="boss" checked> 💀 Боссы</label>
-            <label><input type="checkbox" data-category="medical" checked> 💊 Медицина</label>
-            <label><input type="checkbox" data-category="weapon" checked> 🔫 Оружие</label>
-            <label><input type="checkbox" data-category="quest" checked> 📋 Квесты</label>
+        <div class="filter-header">
+            <h3>ФИЛЬТРЫ</h3>
+            <button id="btn-toggle-all" class="btn-mini" title="Вкл/Выкл все">👁</button>
         </div>
-        <hr>
-        <button id="btn-add-marker" class="btn-action">+ Добавить точку</button>
-        <button id="btn-export" class="btn-action btn-secondary">📥 Экспорт JSON</button>
-        <button id="btn-import" class="btn-action btn-secondary">📤 Импорт JSON</button>
-        <input type="file" id="import-file" accept=".json" style="display:none">
+        <div class="filter-group">
+            <label class="filter-item" data-cat="loot">
+                <input type="checkbox" data-category="loot" checked>
+                <span class="filter-icon" style="background:#f1c40f">💰</span>
+                <span class="filter-label">Лут</span>
+                <span class="filter-count" id="count-loot">0</span>
+            </label>
+            <label class="filter-item" data-cat="key">
+                <input type="checkbox" data-category="key" checked>
+                <span class="filter-icon" style="background:#3498db">🔑</span>
+                <span class="filter-label">Ключи</span>
+                <span class="filter-count" id="count-key">0</span>
+            </label>
+            <label class="filter-item" data-cat="extract">
+                <input type="checkbox" data-category="extract" checked>
+                <span class="filter-icon" style="background:#2ecc71">🚪</span>
+                <span class="filter-label">Выходы</span>
+                <span class="filter-count" id="count-extract">0</span>
+            </label>
+            <label class="filter-item" data-cat="boss">
+                <input type="checkbox" data-category="boss" checked>
+                <span class="filter-icon" style="background:#e74c3c">💀</span>
+                <span class="filter-label">Боссы</span>
+                <span class="filter-count" id="count-boss">0</span>
+            </label>
+            <label class="filter-item" data-cat="medical">
+                <input type="checkbox" data-category="medical" checked>
+                <span class="filter-icon" style="background:#e91e63">💊</span>
+                <span class="filter-label">Медицина</span>
+                <span class="filter-count" id="count-medical">0</span>
+            </label>
+            <label class="filter-item" data-cat="weapon">
+                <input type="checkbox" data-category="weapon" checked>
+                <span class="filter-icon" style="background:#ff9800">🔫</span>
+                <span class="filter-label">Оружие</span>
+                <span class="filter-count" id="count-weapon">0</span>
+            </label>
+            <label class="filter-item" data-cat="quest">
+                <input type="checkbox" data-category="quest" checked>
+                <span class="filter-icon" style="background:#9b59b6">📋</span>
+                <span class="filter-label">Квесты</span>
+                <span class="filter-count" id="count-quest">0</span>
+            </label>
+        </div>
+
+        <!-- Admin tools (hidden by default) -->
+        <div id="admin-tools" class="admin-tools hidden">
+            <div class="admin-divider">
+                <span>РЕДАКТИРОВАНИЕ</span>
+            </div>
+            <button id="btn-add-marker" class="btn-action btn-primary">
+                <span class="btn-icon">+</span> Добавить точку
+            </button>
+            <button id="btn-export" class="btn-action btn-ghost">
+                📥 Экспорт JSON
+            </button>
+            <button id="btn-import" class="btn-action btn-ghost">
+                📤 Импорт JSON
+            </button>
+            <input type="file" id="import-file" accept=".json" style="display:none">
+        </div>
+
+        <div class="filter-footer">
+            <div class="coords-display">
+                <span class="coords-label">КУРСОР</span>
+                <span id="cursor-coords" class="coords-value">—</span>
+            </div>
+        </div>
     </aside>
 
     <!-- ===== MAP CONTAINER ===== -->
@@ -55,64 +117,115 @@
     <aside id="info-panel" class="info-panel hidden">
         <button id="close-info" class="close-btn">&times;</button>
         <div id="info-content">
-            <h2 id="info-title">—</h2>
-            <div id="info-category" class="info-badge">—</div>
-            <div id="info-screenshot">
+            <div id="info-screenshot-wrap">
                 <img id="info-image" src="" alt="Screenshot">
+                <div id="info-no-image" class="no-image">📷 Нет скриншота</div>
             </div>
-            <div id="info-description">
-                <p id="info-text">Нажмите на точку на карте</p>
-            </div>
-            <div id="info-meta">
-                <p><strong>Координаты:</strong> <span id="info-coords">—</span></p>
-            </div>
-            <div id="info-actions">
-                <button id="btn-edit-marker" class="btn-action">✏️ Редактировать</button>
-                <button id="btn-delete-marker" class="btn-action btn-danger">🗑️ Удалить</button>
+            <div class="info-body">
+                <div id="info-category" class="info-badge">—</div>
+                <h2 id="info-title">—</h2>
+                <div id="info-description">
+                    <p id="info-text">Нажмите на точку на карте</p>
+                </div>
+                <div id="info-meta">
+                    <div class="meta-row">
+                        <span class="meta-label">Координаты</span>
+                        <span id="info-coords" class="meta-value">—</span>
+                    </div>
+                    <div class="meta-row">
+                        <span class="meta-label">Карта</span>
+                        <span id="info-map-name" class="meta-value">—</span>
+                    </div>
+                </div>
+                <div id="info-actions" class="hidden">
+                    <button id="btn-edit-marker" class="btn-action btn-ghost">✏️ Редактировать</button>
+                    <button id="btn-delete-marker" class="btn-action btn-danger">🗑️ Удалить</button>
+                </div>
             </div>
         </div>
     </aside>
 
     <!-- ===== MODAL: Add/Edit Marker ===== -->
     <div id="marker-modal" class="modal hidden">
+        <div class="modal-overlay"></div>
         <div class="modal-content">
-            <h2 id="modal-title">Добавить точку</h2>
+            <div class="modal-header">
+                <h2 id="modal-title">Добавить точку</h2>
+                <button id="btn-close-modal" class="close-btn">&times;</button>
+            </div>
             <form id="marker-form">
-                <label>Название:
+                <div class="form-group">
+                    <label for="form-name">Название</label>
                     <input type="text" id="form-name" required placeholder="LEDX на столе">
-                </label>
+                </div>
 
-                <label>Категория:
-                    <select id="form-category">
-                        <option value="loot">💰 Лут</option>
-                        <option value="key">🔑 Ключ</option>
-                        <option value="extract">🚪 Выход</option>
-                        <option value="boss">💀 Босс</option>
-                        <option value="medical">💊 Медицина</option>
-                        <option value="weapon">🔫 Оружие</option>
-                        <option value="quest">📋 Квест</option>
-                    </select>
-                </label>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="form-category">Категория</label>
+                        <select id="form-category">
+                            <option value="loot">💰 Лут</option>
+                            <option value="key">🔑 Ключ</option>
+                            <option value="extract">🚪 Выход</option>
+                            <option value="boss">💀 Босс</option>
+                            <option value="medical">💊 Медицина</option>
+                            <option value="weapon">🔫 Оружие</option>
+                            <option value="quest">📋 Квест</option>
+                        </select>
+                    </div>
+                </div>
 
-                <label>Описание:
+                <div class="form-group">
+                    <label for="form-description">Описание</label>
                     <textarea id="form-description" rows="4" placeholder="Лежит на столе в правом углу комнаты..."></textarea>
-                </label>
+                </div>
 
-                <label>Скриншот (URL или путь):
+                <div class="form-group">
+                    <label for="form-screenshot">Скриншот (URL или путь)</label>
                     <input type="text" id="form-screenshot" placeholder="images/screenshots/lab_ledx_01.jpg">
-                </label>
+                </div>
 
-                <p class="form-hint" id="form-coords-hint">Координаты: нажмите на карту</p>
+                <div class="form-coords-box" id="form-coords-hint">
+                    <span class="coords-icon">📍</span>
+                    <span class="coords-text">Нажмите на карту, чтобы выбрать позицию</span>
+                </div>
+
                 <input type="hidden" id="form-lat">
                 <input type="hidden" id="form-lng">
                 <input type="hidden" id="form-id">
 
                 <div class="modal-buttons">
-                    <button type="submit" class="btn-action">💾 Сохранить</button>
-                    <button type="button" id="btn-cancel-modal" class="btn-action btn-secondary">Отмена</button>
+                    <button type="button" id="btn-cancel-modal" class="btn-action btn-ghost">Отмена</button>
+                    <button type="submit" class="btn-action btn-primary">💾 Сохранить</button>
                 </div>
             </form>
         </div>
+    </div>
+
+    <!-- ===== MODAL: Admin Login ===== -->
+    <div id="admin-modal" class="modal hidden">
+        <div class="modal-overlay"></div>
+        <div class="modal-content modal-small">
+            <div class="modal-header">
+                <h2>Режим редактирования</h2>
+                <button id="btn-close-admin-modal" class="close-btn">&times;</button>
+            </div>
+            <form id="admin-form">
+                <div class="form-group">
+                    <label for="admin-password">Пароль</label>
+                    <input type="password" id="admin-password" required placeholder="Введите пароль">
+                </div>
+                <p id="admin-error" class="form-error hidden">Неверный пароль</p>
+                <div class="modal-buttons">
+                    <button type="button" id="btn-cancel-admin" class="btn-action btn-ghost">Отмена</button>
+                    <button type="submit" class="btn-action btn-primary">🔓 Войти</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ===== NOTIFICATION ===== -->
+    <div id="notification" class="notification hidden">
+        <span id="notification-text"></span>
     </div>
 
     <!-- ===== SCRIPTS ===== -->
