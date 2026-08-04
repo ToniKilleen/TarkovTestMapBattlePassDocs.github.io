@@ -78,6 +78,14 @@ const MAPS_CONFIG = [
         defaultZoom: -1,
         minZoom: -3,
         maxZoom: 4
+    },
+	{
+        id: 'icebreaker',
+        name: 'Ледокол',
+        image: 'images/maps/icebreaker.jpg',
+        defaultZoom: 0,
+        minZoom: -1,
+        maxZoom: 4
     }
 ];
 
