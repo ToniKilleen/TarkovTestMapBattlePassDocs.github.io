@@ -1178,6 +1178,7 @@
                 if (isAddingMarker) stopAddingMarker();
                 $('login-modal').classList.add('hidden');
                 $('review-modal').classList.add('hidden');
+                $('version-modal').classList.add('hidden');
                 closeInfoPanel();
             }
             // F5 = ручное обновление (перехватываем стандартный F5)
