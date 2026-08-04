@@ -30,20 +30,24 @@
     --transition: 0.2s ease;
 }
 
+html, body {
+    height: 100%;
+    width: 100%;
+}
+
 body {
     font-family: var(--font-main);
     background: var(--bg-dark);
     color: var(--text);
     overflow: hidden;
-    height: 100vh;
     display: flex;
     flex-direction: column;
 }
 
+/* ==== HEADER ==== */
 #header {
     display: flex;
     align-items: center;
-    justify-content: space-between;
     background: var(--bg-header);
     border-bottom: 1px solid var(--border);
     padding: 0 20px;
@@ -54,12 +58,21 @@ body {
     gap: 20px;
 }
 
+.header-left {
+    flex-shrink: 0;
+}
+
 .header-center {
     display: flex;
     align-items: center;
     gap: 16px;
     flex: 1;
     justify-content: center;
+    min-width: 0;
+}
+
+.header-right {
+    flex-shrink: 0;
 }
 
 .logo { display: flex; align-items: center; gap: 12px; }
@@ -75,6 +88,7 @@ body {
     padding: 3px;
     border-radius: var(--radius);
     border: 1px solid var(--border);
+    flex-shrink: 0;
 }
 
 .view-btn {
@@ -110,7 +124,16 @@ body {
     font-size: 15px;
 }
 
-.map-tabs { display: flex; gap: 2px; background: var(--bg-dark); padding: 3px; border-radius: var(--radius); }
+.map-tabs {
+    display: flex;
+    gap: 2px;
+    background: var(--bg-dark);
+    padding: 3px;
+    border-radius: var(--radius);
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    max-width: 100%;
+}
 .map-tabs.hidden { display: none; }
 .map-tab {
     padding: 8px 16px; background: transparent; border: none; color: var(--text-dim);
@@ -134,17 +157,26 @@ body {
     flex: 1;
     position: relative;
     overflow: hidden;
+    width: 100%;
 }
 
 .view-container.hidden {
-    display: none;
+    display: none !important;
 }
 
-/* FILTER PANEL */
+/* ==== FILTER PANEL ==== */
 .filter-panel {
-    position: fixed; top: 60px; left: 0; width: 240px; height: calc(100vh - 60px);
-    background: var(--bg-panel); border-right: 1px solid var(--border); z-index: 900;
-    display: flex; flex-direction: column; overflow: hidden;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 240px;
+    height: 100%;
+    background: var(--bg-panel);
+    border-right: 1px solid var(--border);
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
 }
 .filter-header {
     display: flex; align-items: center; justify-content: space-between;
@@ -212,15 +244,33 @@ body {
 .coords-label { font-size: 10px; letter-spacing: 2px; color: var(--text-muted); font-weight: 700; }
 .coords-value { font-family: var(--font-mono); font-size: 12px; color: var(--accent); }
 
-/* MAP */
-#map-container { position: absolute; top: 0; left: 240px; right: 0; bottom: 0; }
-#map { width: 100%; height: 100%; background: var(--bg-dark); }
+/* ==== MAP ==== */
+#map-container {
+    position: absolute;
+    top: 0;
+    left: 240px;
+    right: 0;
+    bottom: 0;
+}
+#map {
+    width: 100%;
+    height: 100%;
+    background: var(--bg-dark);
+}
 
-/* INFO PANEL */
+/* ==== INFO PANEL ==== */
 .info-panel {
-    position: fixed; top: 60px; right: 0; width: 380px; height: calc(100vh - 60px);
-    background: var(--bg-panel); border-left: 1px solid var(--border); z-index: 900;
-    overflow-y: auto; transition: transform 0.3s ease; box-shadow: -4px 0 30px rgba(0,0,0,0.4);
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 380px;
+    height: 100%;
+    background: var(--bg-panel);
+    border-left: 1px solid var(--border);
+    z-index: 20;
+    overflow-y: auto;
+    transition: transform 0.3s ease;
+    box-shadow: -4px 0 30px rgba(0,0,0,0.4);
 }
 .info-panel.hidden { transform: translateX(100%); }
 
@@ -505,11 +555,11 @@ body {
     opacity: 0.5;
 }
 
-/* MARKER FORM PANEL */
+/* ==== MARKER FORM PANEL ==== */
 .marker-form-panel {
-    position: fixed; bottom: 20px; left: 260px; width: 380px;
+    position: absolute; bottom: 20px; left: 260px; width: 380px;
     background: var(--bg-panel); border: 1px solid var(--accent); border-radius: 12px;
-    box-shadow: var(--shadow-lg); z-index: 950; max-height: calc(100vh - 100px); overflow-y: auto;
+    box-shadow: var(--shadow-lg); z-index: 950; max-height: calc(100% - 40px); overflow-y: auto;
 }
 .marker-form-panel.hidden { display: none; }
 .marker-form-header {
@@ -591,7 +641,7 @@ body {
 .form-buttons .btn-action { flex: 1; margin-bottom: 0; padding: 8px 12px; }
 
 .adding-hint {
-    position: fixed; top: 70px; left: 50%; transform: translateX(-50%);
+    position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
     padding: 10px 24px; background: var(--accent); color: var(--bg-dark);
     font-weight: 700; font-size: 14px; border-radius: 8px; z-index: 960;
     box-shadow: var(--shadow); letter-spacing: 1px; animation: pulse-hint 2s infinite;
@@ -599,7 +649,7 @@ body {
 .adding-hint.hidden { display: none; }
 @keyframes pulse-hint { 0%,100%{opacity:1} 50%{opacity:0.7} }
 
-/* MODAL */
+/* ==== MODAL ==== */
 .modal {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 2000;
     display: flex; align-items: center; justify-content: center;
@@ -639,7 +689,7 @@ body {
 .modal-buttons { display: flex; gap: 8px; padding-top: 8px; }
 .modal-buttons .btn-action { flex: 1; margin-bottom: 0; }
 
-/* NOTIFICATION */
+/* ==== NOTIFICATION ==== */
 .notification {
     position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
     padding: 12px 24px; background: var(--bg-card); border: 1px solid var(--accent);
@@ -649,7 +699,7 @@ body {
 .notification.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 .notification.hidden { display: none; }
 
-/* LEAFLET */
+/* ==== LEAFLET ==== */
 .leaflet-container { background: var(--bg-dark) !important; font-family: var(--font-main) !important; }
 .custom-marker-icon { background: none; border: none; }
 .marker-icon-wrapper {
@@ -684,7 +734,7 @@ body {
 }
 .leaflet-control-zoom a:hover { background: var(--bg-hover) !important; border-color: var(--accent) !important; color: var(--accent) !important; }
 
-/* Highlighted marker (когда переходим из каталога) */
+/* Highlighted marker */
 .marker-highlighted .marker-icon-wrapper {
     animation: pulse-marker 1.5s ease-in-out infinite;
     transform: scale(1.5);
@@ -707,18 +757,21 @@ body {
     .catalog-grid { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
 }
 
+@media (max-width: 900px) {
+    .logo-text { display: none; }
+}
+
 @media (max-width: 768px) {
     #header { padding: 0 10px; gap: 10px; }
     .header-center { gap: 8px; }
-    .logo-text { display: none; }
-    .filter-panel { width: 56px; padding: 0; }
+    .filter-panel { width: 56px; }
     .filter-header h3, .filter-label, .filter-count, .admin-tools, .filter-footer { display: none; }
     .filter-header { justify-content: center; }
     .filter-item { justify-content: center; padding: 8px; }
     #map-container { left: 56px; }
     .info-panel { width: 100%; }
-    .map-tabs { overflow-x: auto; max-width: 200px; }
-    .marker-form-panel { left: 70px; width: calc(100vw - 90px); }
+    .map-tabs { max-width: 180px; }
+    .marker-form-panel { left: 70px; width: calc(100% - 90px); }
     .view-btn span:not(.view-icon) { display: none; }
     .catalog-wrapper { padding: 20px 15px; }
     .catalog-header h2 { font-size: 20px; }
