@@ -12,10 +12,8 @@ const MAPS_CONFIG = [
         id: 'laboratory',
         name: 'Лаборатория',
         image: 'images/maps/laboratory.jpg',
-        bounds: [4000, 5600],  // подставьте реальные размеры вашей картинки
+        bounds: [3820, 2189],  // подставьте реальные размеры вашей картинки
         floors: [
-            { id: 'floor1', name: 'Этаж 1', image: 'images/maps/laboratory_floor1.jpg' },
-            { id: 'floor2', name: 'Этаж 2', image: 'images/maps/laboratory_floor2.jpg' },
             { id: 'basement', name: 'Подвал', image: 'images/maps/laboratory_basement.jpg' }
         ],
         defaultZoom: -1,
