@@ -84,13 +84,36 @@ const SupabaseDB = {
     },
 
     // ===== ПРЕДЛОЖЕНИЯ =====
+    // Возвращает предложения + username автора отдельным полем
     async getSuggestions(status = null) {
-        let url = `${SUPABASE_URL}/rest/v1/suggestions?select=*,created_by(username)&order=created_at.desc`;
+        // Простой запрос без FK-джойна (стабильнее)
+        let url = `${SUPABASE_URL}/rest/v1/suggestions?select=*&order=created_at.desc`;
         if (status) url += `&status=eq.${status}`;
 
         const res = await fetch(url, { headers: this.headers });
         if (!res.ok) throw new Error(`${res.status}`);
-        return await res.json();
+        const suggestions = await res.json();
+
+        // Догружаем usernames отдельно
+        const userIds = [...new Set(suggestions.map(s => s.created_by).filter(Boolean))];
+        if (userIds.length > 0) {
+            const usersRes = await fetch(
+                `${SUPABASE_URL}/rest/v1/users?id=in.(${userIds.join(',')})&select=id,username`,
+                { headers: this.headers }
+            );
+            if (usersRes.ok) {
+                const users = await usersRes.json();
+                const userMap = {};
+                users.forEach(u => { userMap[u.id] = u.username; });
+
+                // Добавляем username к каждому предложению
+                suggestions.forEach(s => {
+                    s.author_username = userMap[s.created_by] || '?';
+                });
+            }
+        }
+
+        return suggestions;
     },
 
     async addSuggestion(suggestion) {

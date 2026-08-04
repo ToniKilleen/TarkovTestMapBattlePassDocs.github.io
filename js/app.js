@@ -165,10 +165,13 @@
         try {
             const all = await SupabaseDB.getSuggestions('pending');
             if (currentUser.role === 'admin') {
+                // Админ видит все
                 suggestions = all;
             } else {
-                suggestions = all.filter(s => s.created_by?.username === currentUser.username);
+                // Оператор видит только свои — фильтруем по user ID
+                suggestions = all.filter(s => s.created_by === currentUser.id);
             }
+            console.log(`Загружено предложений: ${suggestions.length} (роль: ${currentUser.role})`);
         } catch (err) {
             console.error('Ошибка загрузки предложений:', err);
             suggestions = [];
@@ -261,8 +264,9 @@
         try {
             let sugs = await SupabaseDB.getSuggestions(status);
 
+            // Оператор видит только свои
             if (currentUser?.role === 'operator') {
-                sugs = sugs.filter(s => s.created_by?.username === currentUser.username);
+                sugs = sugs.filter(s => s.created_by === currentUser.id);
             }
 
             if (!sugs || sugs.length === 0) {
@@ -278,6 +282,7 @@
 
             sugs.forEach(s => {
                 const mapCfg = MAPS_CONFIG.find(m => m.id === s.map_id);
+                const author = s.author_username || '?';
                 const card = document.createElement('div');
                 card.className = `suggestion-card suggestion-${s.status}`;
                 card.innerHTML = `
@@ -287,7 +292,7 @@
                             <div class="suggestion-name">${escapeHtml(s.name)}</div>
                             <div class="suggestion-meta">
                                 <span class="catalog-loc-map-name">${escapeHtml(mapCfg?.name || s.map_id)}</span>
-                                <span class="suggestion-author">от ${escapeHtml(s.created_by?.username || '?')}</span>
+                                <span class="suggestion-author">от ${escapeHtml(author)}</span>
                                 <span class="suggestion-date">${new Date(s.created_at).toLocaleDateString('ru')}</span>
                             </div>
                         </div>
@@ -666,7 +671,7 @@
         const suggBadge = $('info-suggestion-badge');
         if (type === 'suggestion') {
             suggBadge.classList.remove('hidden');
-            const author = data.created_by?.username || '?';
+            const author = data.author_username || '?';
             suggBadge.innerHTML = `💡 <strong>ПРЕДЛОЖЕНИЕ</strong> от ${escapeHtml(author)}`;
         } else {
             suggBadge.classList.add('hidden');
