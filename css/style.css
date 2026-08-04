@@ -695,3 +695,315 @@ body {
     /* На мобильных info-panel не сжимает карту, а перекрывает её */
     #view-map-container.info-open #map-container { right: 0; }
 }
+/* ==== AUTH UI ==== */
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.user-info.hidden {
+    display: none;
+}
+
+.user-name {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--accent);
+}
+
+.role-badge {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    text-transform: uppercase;
+}
+
+.role-admin {
+    background: var(--danger);
+    color: white;
+}
+
+.role-operator {
+    background: #3498db;
+    color: white;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* ==== SCREENSHOT UPLOAD ==== */
+.screenshot-upload {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    background: var(--bg-dark);
+}
+
+.screenshot-dropzone {
+    padding: 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all var(--transition);
+}
+
+.screenshot-dropzone:hover,
+.screenshot-dropzone.dragover {
+    background: var(--accent-glow);
+    border-color: var(--accent);
+}
+
+.screenshot-dropzone p {
+    color: var(--text-dim);
+    font-size: 13px;
+    margin-bottom: 4px;
+}
+
+.screenshot-hint {
+    font-size: 11px !important;
+    color: var(--text-muted) !important;
+}
+
+.screenshot-dropzone.hidden {
+    display: none;
+}
+
+.screenshot-preview {
+    position: relative;
+}
+
+.screenshot-preview.hidden {
+    display: none;
+}
+
+.screenshot-preview img {
+    width: 100%;
+    max-height: 200px;
+    object-fit: cover;
+    display: block;
+}
+
+.screenshot-remove {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 28px;
+    height: 28px;
+    background: rgba(0,0,0,0.7);
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    color: var(--danger);
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.screenshot-remove:hover {
+    background: var(--danger);
+    color: white;
+}
+
+.btn-small {
+    padding: 6px 12px !important;
+    font-size: 12px !important;
+    margin-bottom: 8px;
+}
+
+/* ==== SUGGESTIONS ==== */
+.btn-suggest {
+    background: #3498db;
+    color: white;
+}
+
+.btn-suggest:hover {
+    background: #2980b9;
+}
+
+.suggestions-tabs {
+    display: flex;
+    gap: 4px;
+}
+
+.suggestion-tab {
+    padding: 8px 16px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-family: var(--font-main);
+    font-size: 13px;
+    font-weight: 600;
+    transition: all var(--transition);
+}
+
+.suggestion-tab:hover {
+    color: var(--text);
+    border-color: var(--text-dim);
+}
+
+.suggestion-tab.active {
+    background: var(--accent);
+    color: var(--bg-dark);
+    border-color: var(--accent);
+}
+
+.suggestions-list {
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.suggestions-list.hidden {
+    display: none;
+}
+
+.suggestion-card {
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 12px;
+    transition: all var(--transition);
+}
+
+.suggestion-card:hover {
+    border-color: var(--accent-dim);
+}
+
+.suggestion-pending {
+    border-left: 3px solid #f39c12;
+}
+
+.suggestion-approved {
+    border-left: 3px solid var(--success);
+}
+
+.suggestion-rejected {
+    border-left: 3px solid var(--danger);
+    opacity: 0.7;
+}
+
+.suggestion-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.suggestion-icon {
+    width: 40px;
+    height: 40px;
+    background: var(--bg-dark);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.suggestion-icon img {
+    width: 24px;
+    height: 24px;
+}
+
+.suggestion-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.suggestion-name {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 4px;
+}
+
+.suggestion-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    font-size: 12px;
+    color: var(--text-dim);
+}
+
+.suggestion-author {
+    color: var(--accent);
+}
+
+.suggestion-status-badge {
+    font-size: 20px;
+    flex-shrink: 0;
+}
+
+.suggestion-desc {
+    font-size: 14px;
+    color: var(--text-dim);
+    line-height: 1.6;
+    padding: 10px 14px;
+    background: var(--bg-dark);
+    border-radius: var(--radius);
+    margin-bottom: 12px;
+    border-left: 3px solid var(--accent);
+}
+
+.suggestion-screenshot {
+    margin-bottom: 12px;
+    border-radius: var(--radius);
+    overflow: hidden;
+}
+
+.suggestion-screenshot img {
+    width: 100%;
+    max-height: 300px;
+    object-fit: cover;
+    display: block;
+}
+
+.suggestion-comment {
+    font-size: 13px;
+    color: var(--text-dim);
+    padding: 8px 12px;
+    background: var(--bg-hover);
+    border-radius: var(--radius);
+    margin-bottom: 12px;
+    font-style: italic;
+}
+
+/* ==== REVIEW MODAL ==== */
+.review-body {
+    padding: 20px 24px 0;
+}
+
+.review-item {
+    margin-bottom: 8px;
+    font-size: 14px;
+    color: var(--text-dim);
+}
+
+.review-item strong {
+    color: var(--text);
+}
+
+.review-item img {
+    width: 16px;
+    height: 16px;
+    vertical-align: middle;
+}
+
+.review-screenshot {
+    margin: 12px 0;
+    border-radius: var(--radius);
+    overflow: hidden;
+}
+
+.review-screenshot img {
+    width: 100%;
+    max-height: 200px;
+    object-fit: cover;
+}

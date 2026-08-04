@@ -21,46 +21,39 @@
                 </div>
             </div>
         </div>
-
         <div class="header-center">
-            <!-- Переключатель режима: Карта / Каталог -->
             <div class="view-switcher">
-                <button id="view-map" class="view-btn active">
-                    <span class="view-icon">🗺</span>
-                    <span>КАРТА</span>
-                </button>
-                <button id="view-catalog" class="view-btn">
-                    <span class="view-icon">📚</span>
-                    <span>КАТАЛОГ</span>
-                </button>
+                <button id="view-map" class="view-btn active"><span class="view-icon">🗺</span><span>КАРТА</span></button>
+                <button id="view-catalog" class="view-btn"><span class="view-icon">📚</span><span>КАТАЛОГ</span></button>
+                <button id="view-suggestions" class="view-btn"><span class="view-icon">📝</span><span>ПРЕДЛОЖЕНИЯ</span></button>
             </div>
-
-            <!-- Вкладки карт (только в режиме карты) -->
             <div id="map-selector" class="map-tabs"></div>
         </div>
-
         <div class="header-right">
-            <button id="btn-admin-toggle" class="admin-toggle" title="Режим редактирования">🔒</button>
+            <div id="user-info" class="user-info hidden">
+                <span id="user-role-badge" class="role-badge"></span>
+                <span id="user-name" class="user-name"></span>
+                <button id="btn-logout" class="btn-mini" title="Выйти">🚪</button>
+            </div>
+            <button id="btn-login-toggle" class="admin-toggle" title="Войти">🔒</button>
         </div>
     </header>
 
     <!-- ============ РЕЖИМ КАРТЫ ============ -->
     <div id="view-map-container" class="view-container">
-
-        <!-- FILTER PANEL -->
         <aside id="filter-panel" class="filter-panel">
             <div class="filter-header">
                 <h3>ФИЛЬТРЫ</h3>
                 <button id="btn-toggle-all" class="btn-mini" title="Вкл/Выкл все">👁</button>
             </div>
             <div id="filter-group" class="filter-group"></div>
-
             <div id="admin-tools" class="admin-tools hidden">
-                <div class="admin-divider"><span>РЕДАКТИРОВАНИЕ</span></div>
+                <div class="admin-divider"><span>АДМИНИСТРАТОР</span></div>
                 <button id="btn-add-marker" class="btn-action btn-primary"><span class="btn-icon">+</span> Добавить точку</button>
-                <button id="btn-export" class="btn-action btn-ghost">📥 Экспорт JSON</button>
-                <button id="btn-import" class="btn-action btn-ghost">📤 Импорт JSON</button>
-                <input type="file" id="import-file" accept=".json" style="display:none">
+            </div>
+            <div id="operator-tools" class="admin-tools hidden">
+                <div class="admin-divider"><span>ОПЕРАТОР</span></div>
+                <button id="btn-suggest-marker" class="btn-action btn-suggest"><span class="btn-icon">💡</span> Предложить точку</button>
             </div>
             <div class="filter-footer">
                 <div class="coords-display">
@@ -70,14 +63,10 @@
             </div>
         </aside>
 
-        <!-- MAP -->
-        <div id="map-container">
-            <div id="map"></div>
-        </div>
+        <div id="map-container"><div id="map"></div></div>
+        <div id="adding-hint" class="adding-hint hidden">📍 КЛИКНИТЕ ПО КАРТЕ</div>
 
-        <div id="adding-hint" class="adding-hint hidden">📍 КЛИКНИТЕ ПО КАРТЕ ЧТОБЫ ПОСТАВИТЬ ТОЧКУ</div>
-
-        <!-- MARKER FORM PANEL -->
+        <!-- MARKER FORM PANEL (admin: добавить / operator: предложить) -->
         <div id="marker-form-panel" class="marker-form-panel hidden">
             <div class="marker-form-header">
                 <h3 id="form-panel-title">ДОБАВИТЬ ТОЧКУ</h3>
@@ -106,8 +95,20 @@
                         <textarea id="form-description" rows="3" placeholder="Лежит на столе в правом углу..."></textarea>
                     </div>
                     <div class="form-group">
-                        <label for="form-screenshot">Скриншот (URL)</label>
-                        <input type="text" id="form-screenshot" placeholder="images/screenshots/example.jpg">
+                        <label>Скриншот</label>
+                        <div class="screenshot-upload" id="screenshot-upload">
+                            <div class="screenshot-preview hidden" id="screenshot-preview">
+                                <img id="screenshot-preview-img" src="" alt="">
+                                <button type="button" id="btn-remove-screenshot" class="screenshot-remove">&times;</button>
+                            </div>
+                            <div class="screenshot-dropzone" id="screenshot-dropzone">
+                                <p>📷 Вставьте скриншот (Ctrl+V)</p>
+                                <p class="screenshot-hint">или перетащите файл сюда</p>
+                                <input type="file" id="screenshot-file" accept="image/*" style="display:none">
+                                <button type="button" id="btn-browse-screenshot" class="btn-action btn-ghost btn-small">Выбрать файл</button>
+                            </div>
+                        </div>
+                        <input type="hidden" id="form-screenshot">
                     </div>
                     <div class="form-coords-box" id="form-coords-hint">
                         <span class="coords-icon">📍</span>
@@ -116,9 +117,10 @@
                     <input type="hidden" id="form-lat">
                     <input type="hidden" id="form-lng">
                     <input type="hidden" id="form-id">
+                    <input type="hidden" id="form-mode" value="add">
                     <div class="form-buttons">
                         <button type="button" id="btn-cancel-form" class="btn-action btn-ghost">Отмена</button>
-                        <button type="submit" class="btn-action btn-primary">💾 Сохранить</button>
+                        <button type="submit" id="btn-submit-form" class="btn-action btn-primary">💾 Сохранить</button>
                     </div>
                 </form>
             </div>
@@ -135,11 +137,12 @@
                 <div class="info-body">
                     <div id="info-category" class="info-badge">—</div>
                     <h2 id="info-title">—</h2>
-                    <div id="info-description"><p id="info-text">Нажмите на точку на карте</p></div>
+                    <div id="info-description"><p id="info-text"></p></div>
                     <div id="info-meta">
                         <div class="meta-row"><span class="meta-label">Координаты</span><span id="info-coords" class="meta-value">—</span></div>
                         <div class="meta-row"><span class="meta-label">Карта</span><span id="info-map-name" class="meta-value">—</span></div>
                     </div>
+                    <button id="btn-share-marker" class="btn-action btn-ghost btn-small">🔗 Скопировать ссылку</button>
                     <div id="info-actions" class="hidden">
                         <button id="btn-edit-marker" class="btn-action btn-ghost">✏️ Редактировать</button>
                         <button id="btn-delete-marker" class="btn-action btn-danger">🗑️ Удалить</button>
@@ -149,39 +152,79 @@
         </aside>
     </div>
 
-    <!-- ============ РЕЖИМ КАТАЛОГА ============ -->
+    <!-- ============ КАТАЛОГ ============ -->
     <div id="view-catalog-container" class="view-container hidden">
         <div class="catalog-wrapper">
             <div class="catalog-header">
                 <h2>Каталог предметов</h2>
                 <div class="catalog-search">
-                    <input type="text" id="catalog-search" placeholder="🔍 Поиск по названию или описанию...">
+                    <input type="text" id="catalog-search" placeholder="🔍 Поиск...">
                 </div>
             </div>
-
-            <div id="catalog-grid" class="catalog-grid">
-                <!-- Генерируется JS -->
-            </div>
+            <div id="catalog-grid" class="catalog-grid"></div>
         </div>
     </div>
 
-    <!-- ADMIN LOGIN -->
-    <div id="admin-modal" class="modal hidden">
+    <!-- ============ ПРЕДЛОЖЕНИЯ ============ -->
+    <div id="view-suggestions-container" class="view-container hidden">
+        <div class="catalog-wrapper">
+            <div class="catalog-header">
+                <h2>Предложения</h2>
+                <div class="suggestions-tabs">
+                    <button class="suggestion-tab active" data-status="pending">⏳ Ожидают</button>
+                    <button class="suggestion-tab" data-status="approved">✅ Одобрены</button>
+                    <button class="suggestion-tab" data-status="rejected">❌ Отклонены</button>
+                </div>
+            </div>
+            <div id="suggestions-list" class="suggestions-list"></div>
+            <div id="suggestions-empty" class="catalog-empty">Нет предложений</div>
+        </div>
+    </div>
+
+    <!-- LOGIN MODAL -->
+    <div id="login-modal" class="modal hidden">
         <div class="modal-overlay"></div>
         <div class="modal-content">
             <div class="modal-header">
-                <h2>Режим редактирования</h2>
-                <button id="btn-close-admin-modal" class="close-btn">&times;</button>
+                <h2>Вход</h2>
+                <button id="btn-close-login" class="close-btn">&times;</button>
             </div>
-            <form id="admin-form">
+            <form id="login-form">
                 <div class="form-group">
-                    <label for="admin-password">Пароль</label>
-                    <input type="password" id="admin-password" required placeholder="Введите пароль">
+                    <label for="login-username">Логин</label>
+                    <input type="text" id="login-username" required placeholder="admin или operator">
                 </div>
-                <p id="admin-error" class="form-error hidden">Неверный пароль</p>
+                <div class="form-group">
+                    <label for="login-password">Пароль</label>
+                    <input type="password" id="login-password" required placeholder="Пароль">
+                </div>
+                <p id="login-error" class="form-error hidden">Неверный логин или пароль</p>
                 <div class="modal-buttons">
-                    <button type="button" id="btn-cancel-admin" class="btn-action btn-ghost">Отмена</button>
+                    <button type="button" id="btn-cancel-login" class="btn-action btn-ghost">Отмена</button>
                     <button type="submit" class="btn-action btn-primary">🔓 Войти</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- REVIEW SUGGESTION MODAL (только для админа) -->
+    <div id="review-modal" class="modal hidden">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Рассмотреть предложение</h2>
+                <button id="btn-close-review" class="close-btn">&times;</button>
+            </div>
+            <div id="review-body" class="review-body"></div>
+            <form id="review-form">
+                <div class="form-group">
+                    <label for="review-comment">Комментарий (необязательно)</label>
+                    <textarea id="review-comment" rows="2" placeholder="Причина одобрения/отклонения..."></textarea>
+                </div>
+                <input type="hidden" id="review-suggestion-id">
+                <div class="modal-buttons">
+                    <button type="button" id="btn-reject-suggestion" class="btn-action btn-danger">❌ Отклонить</button>
+                    <button type="button" id="btn-approve-suggestion" class="btn-action btn-primary">✅ Одобрить</button>
                 </div>
             </form>
         </div>
@@ -195,6 +238,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="js/maps-config.js"></script>
     <script src="js/markers-data.js"></script>
+    <script src="js/supabase-client.js"></script>
     <script src="js/app.js"></script>
 </body>
 </html>
