@@ -54,7 +54,6 @@ body {
     box-shadow: 0 2px 20px rgba(0,0,0,0.5);
 }
 
-/* Logo */
 .logo {
     display: flex;
     align-items: center;
@@ -81,7 +80,6 @@ body {
     letter-spacing: 3px;
 }
 
-/* Map Tabs */
 .map-tabs {
     display: flex;
     gap: 2px;
@@ -116,7 +114,6 @@ body {
     background: var(--accent);
 }
 
-/* Admin Toggle */
 .admin-toggle {
     width: 40px;
     height: 40px;
@@ -194,7 +191,6 @@ body {
     color: var(--accent);
 }
 
-/* Filter Items */
 .filter-group {
     padding: 8px;
     flex: 1;
@@ -262,7 +258,6 @@ body {
     text-align: center;
 }
 
-/* Admin Tools */
 .admin-tools {
     padding: 0 12px 12px;
 }
@@ -293,7 +288,6 @@ body {
     background: var(--border);
 }
 
-/* Buttons */
 .btn-action {
     width: 100%;
     padding: 10px 14px;
@@ -351,7 +345,6 @@ body {
     font-weight: 400;
 }
 
-/* Filter Footer */
 .filter-footer {
     padding: 12px;
     border-top: 1px solid var(--border);
@@ -436,7 +429,6 @@ body {
     background: rgba(231, 76, 60, 0.1);
 }
 
-/* Info Screenshot */
 #info-screenshot-wrap {
     width: 100%;
     height: 220px;
@@ -475,7 +467,6 @@ body {
     display: none;
 }
 
-/* Info Body */
 .info-body {
     padding: 20px;
 }
@@ -557,7 +548,158 @@ body {
     flex: 1;
 }
 
-/* ===== MODAL ===== */
+/* ===== MARKER FORM PANEL (вместо модалки — панель слева внизу) ===== */
+.marker-form-panel {
+    position: fixed;
+    bottom: 20px;
+    left: 260px;
+    width: 380px;
+    background: var(--bg-panel);
+    border: 1px solid var(--accent);
+    border-radius: 12px;
+    box-shadow: var(--shadow-lg);
+    z-index: 950;
+    max-height: calc(100vh - 100px);
+    overflow-y: auto;
+    transition: all 0.3s ease;
+}
+
+.marker-form-panel.hidden {
+    display: none;
+}
+
+.marker-form-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+    cursor: move;
+}
+
+.marker-form-header h3 {
+    color: var(--accent);
+    font-size: 14px;
+    letter-spacing: 2px;
+    font-weight: 700;
+}
+
+.marker-form-body {
+    padding: 16px 18px;
+}
+
+.marker-form-body .form-group {
+    margin-bottom: 12px;
+}
+
+.marker-form-body label {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 11px;
+    color: var(--text-dim);
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.marker-form-body input[type="text"],
+.marker-form-body textarea,
+.marker-form-body select {
+    width: 100%;
+    padding: 8px 12px;
+    background: var(--bg-dark);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--font-main);
+    font-size: 13px;
+    border-radius: var(--radius);
+    transition: border-color var(--transition);
+}
+
+.marker-form-body input:focus,
+.marker-form-body textarea:focus,
+.marker-form-body select:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+.marker-form-body textarea {
+    resize: vertical;
+    min-height: 60px;
+}
+
+.form-coords-box {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    background: var(--accent-glow);
+    border: 1px dashed var(--accent-dim);
+    border-radius: var(--radius);
+    margin-bottom: 12px;
+    transition: all var(--transition);
+}
+
+.form-coords-box.selected {
+    background: rgba(46, 204, 113, 0.1);
+    border-color: var(--success);
+}
+
+.coords-icon {
+    font-size: 18px;
+}
+
+.coords-text {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--accent);
+}
+
+.form-coords-box.selected .coords-text {
+    color: var(--success);
+}
+
+.form-buttons {
+    display: flex;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.form-buttons .btn-action {
+    flex: 1;
+    margin-bottom: 0;
+    padding: 8px 12px;
+}
+
+/* Подсказка на карте */
+.adding-hint {
+    position: fixed;
+    top: 70px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 10px 24px;
+    background: var(--accent);
+    color: var(--bg-dark);
+    font-weight: 700;
+    font-size: 14px;
+    border-radius: 8px;
+    z-index: 960;
+    box-shadow: var(--shadow);
+    letter-spacing: 1px;
+    animation: pulse-hint 2s infinite;
+}
+
+.adding-hint.hidden {
+    display: none;
+}
+
+@keyframes pulse-hint {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+/* ===== MODAL (только для логина) ===== */
 .modal {
     position: fixed;
     top: 0;
@@ -589,15 +731,11 @@ body {
     background: var(--bg-panel);
     border: 1px solid var(--border);
     border-radius: 12px;
-    width: 500px;
+    width: 380px;
     max-height: 90vh;
     overflow-y: auto;
     box-shadow: var(--shadow-lg);
     z-index: 1;
-}
-
-.modal-small {
-    width: 380px;
 }
 
 .modal-header {
@@ -625,15 +763,6 @@ body {
 
 .form-group {
     margin-bottom: 16px;
-}
-
-.form-row {
-    display: flex;
-    gap: 12px;
-}
-
-.form-row .form-group {
-    flex: 1;
 }
 
 .form-group label {
@@ -682,37 +811,6 @@ body {
     display: none;
 }
 
-.form-coords-box {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 12px 14px;
-    background: var(--accent-glow);
-    border: 1px dashed var(--accent-dim);
-    border-radius: var(--radius);
-    margin-bottom: 16px;
-    transition: all var(--transition);
-}
-
-.form-coords-box.selected {
-    background: rgba(46, 204, 113, 0.1);
-    border-color: var(--success);
-}
-
-.coords-icon {
-    font-size: 20px;
-}
-
-.coords-text {
-    font-family: var(--font-mono);
-    font-size: 12px;
-    color: var(--accent);
-}
-
-.form-coords-box.selected .coords-text {
-    color: var(--success);
-}
-
 .modal-buttons {
     display: flex;
     gap: 8px;
@@ -753,7 +851,7 @@ body {
     display: none;
 }
 
-/* ===== LEAFLET CUSTOMIZATION ===== */
+/* ===== LEAFLET ===== */
 .leaflet-container {
     background: var(--bg-dark) !important;
     font-family: var(--font-main) !important;
@@ -807,7 +905,6 @@ body {
     border-top-color: var(--border-light) !important;
 }
 
-/* Zoom Controls */
 .leaflet-control-zoom a {
     background: var(--bg-card) !important;
     color: var(--text) !important;
@@ -826,55 +923,24 @@ body {
 }
 
 /* ===== SCROLLBAR ===== */
-::-webkit-scrollbar {
-    width: 5px;
-}
-::-webkit-scrollbar-track {
-    background: transparent;
-}
-::-webkit-scrollbar-thumb {
-    background: var(--border);
-    border-radius: 3px;
-}
-::-webkit-scrollbar-thumb:hover {
-    background: var(--accent-dim);
-}
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--accent-dim); }
 
 /* ===== RESPONSIVE ===== */
 @media (max-width: 1200px) {
-    .map-tab {
-        padding: 6px 10px;
-        font-size: 11px;
-    }
+    .map-tab { padding: 6px 10px; font-size: 11px; }
 }
 
 @media (max-width: 768px) {
-    .filter-panel {
-        width: 56px;
-        padding: 0;
-    }
-    .filter-header h3,
-    .filter-label,
-    .filter-count,
-    .admin-tools,
-    .filter-footer,
-    .logo-text {
-        display: none;
-    }
-    .filter-header {
-        justify-content: center;
-    }
-    .filter-item {
-        justify-content: center;
-        padding: 8px;
-    }
-    #map-container {
-        margin-left: 56px;
-    }
-    .info-panel {
-        width: 100%;
-    }
-    .map-tabs {
-        overflow-x: auto;
-    }
+    .filter-panel { width: 56px; padding: 0; }
+    .filter-header h3, .filter-label, .filter-count,
+    .admin-tools, .filter-footer, .logo-text { display: none; }
+    .filter-header { justify-content: center; }
+    .filter-item { justify-content: center; padding: 8px; }
+    #map-container { margin-left: 56px; }
+    .info-panel { width: 100%; }
+    .map-tabs { overflow-x: auto; }
+    .marker-form-panel { left: 70px; width: calc(100vw - 90px); }
 }

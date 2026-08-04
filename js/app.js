@@ -1,13 +1,6 @@
 (function () {
     'use strict';
 
-    /*
-     * ПАРОЛЬ ДЛЯ РЕЖИМА РЕДАКТИРОВАНИЯ
-     * Измените на свой. Это НЕ безопасная защита,
-     * но достаточная чтобы случайные посетители
-     * не могли менять точки.
-     * Реальная защита — через GitHub (только вы пушите изменения).
-     */
     const ADMIN_PASSWORD = 'tarkov2024';
 
     // ===== STATE =====
@@ -23,32 +16,6 @@
     // ===== DOM =====
     const $ = id => document.getElementById(id);
 
-    const $mapSelector = $('map-selector');
-    const $infoPanel = $('info-panel');
-    const $markerModal = $('marker-modal');
-    const $adminModal = $('admin-modal');
-
-    const $infoTitle = $('info-title');
-    const $infoCategory = $('info-category');
-    const $infoImage = $('info-image');
-    const $infoNoImage = $('info-no-image');
-    const $infoText = $('info-text');
-    const $infoCoords = $('info-coords');
-    const $infoMapName = $('info-map-name');
-    const $infoActions = $('info-actions');
-
-    const $formName = $('form-name');
-    const $formCategory = $('form-category');
-    const $formDescription = $('form-description');
-    const $formScreenshot = $('form-screenshot');
-    const $formLat = $('form-lat');
-    const $formLng = $('form-lng');
-    const $formId = $('form-id');
-    const $formCoordsHint = $('form-coords-hint');
-
-    const $cursorCoords = $('cursor-coords');
-    const $adminToggle = $('btn-admin-toggle');
-
     // ===== INIT =====
     function init() {
         loadMarkers();
@@ -57,31 +24,19 @@
         switchMap(MAPS_CONFIG[0].id);
     }
 
-    // ===== MARKERS STORAGE =====
+    // ===== MARKERS =====
     function loadMarkers() {
-        // Всегда начинаем с публичных маркеров из файла
         markers = JSON.parse(JSON.stringify(DEFAULT_MARKERS));
-
-        // Если админ ранее добавлял локальные изменения — мержим
         const local = localStorage.getItem('tarkov_markers_local');
         if (local) {
             try {
                 const localMarkers = JSON.parse(local);
-                const defaultIds = new Set(DEFAULT_MARKERS.map(m => m.id));
-
                 localMarkers.forEach(lm => {
-                    const existingIndex = markers.findIndex(m => m.id === lm.id);
-                    if (existingIndex !== -1) {
-                        // Обновляем существующий
-                        markers[existingIndex] = lm;
-                    } else {
-                        // Добавляем новый
-                        markers.push(lm);
-                    }
+                    const i = markers.findIndex(m => m.id === lm.id);
+                    if (i !== -1) markers[i] = lm;
+                    else markers.push(lm);
                 });
-            } catch (e) {
-                console.warn('Ошибка загрузки локальных маркеров:', e);
-            }
+            } catch (e) { console.warn(e); }
         }
     }
 
@@ -91,14 +46,14 @@
 
     // ===== MAP TABS =====
     function renderMapTabs() {
-        $mapSelector.innerHTML = '';
+        $('map-selector').innerHTML = '';
         MAPS_CONFIG.forEach(cfg => {
             const tab = document.createElement('button');
             tab.className = 'map-tab';
             tab.textContent = cfg.name;
             tab.dataset.mapId = cfg.id;
             tab.addEventListener('click', () => switchMap(cfg.id));
-            $mapSelector.appendChild(tab);
+            $('map-selector').appendChild(tab);
         });
     }
 
@@ -106,9 +61,9 @@
     function switchMap(mapId) {
         const config = MAPS_CONFIG.find(m => m.id === mapId);
         if (!config) return;
-
         currentMapId = mapId;
         closeInfoPanel();
+        stopAddingMarker();
 
         document.querySelectorAll('.map-tab').forEach(tab => {
             tab.classList.toggle('active', tab.dataset.mapId === mapId);
@@ -117,53 +72,35 @@
         loadImageAndInitMap(config);
     }
 
-    // ===== AUTO-DETECT IMAGE SIZE =====
+    // ===== LOAD IMAGE =====
     function loadImageAndInitMap(config) {
         const mapDiv = $('map');
         mapDiv.style.opacity = '0.3';
 
         const img = new Image();
-
         img.onload = function () {
-            console.log(`[${config.id}] ✅ ${this.width}x${this.height}`);
             initLeafletMap(config, config.image, [this.height, this.width]);
             mapDiv.style.opacity = '1';
         };
-
         img.onerror = function () {
-            console.error(`[${config.id}] ❌ ${config.image}`);
             if (map) { map.remove(); map = null; }
             mapDiv.style.opacity = '1';
             mapDiv.innerHTML = `
-                <div style="
-                    display:flex; flex-direction:column; align-items:center;
-                    justify-content:center; height:100%; color:#e74c3c;
-                    font-family:'Share Tech Mono',monospace; text-align:center; padding:40px;
-                ">
-                    <p style="font-size:64px; margin-bottom:20px;">⚠️</p>
-                    <h2 style="margin-bottom:12px; font-size:20px;">Карта не найдена</h2>
-                    <p style="color:#555; margin-bottom:8px;">
-                        Файл: <code style="color:#c8aa58; background:#1a1b21; padding:4px 8px; border-radius:4px;">${config.image}</code>
-                    </p>
-                    <p style="color:#444; font-size:13px; max-width:400px; line-height:1.6;">
-                        Проверьте что файл существует в репозитории.<br>
-                        Убедитесь что расширение (.jpg/.png) совпадает.
-                    </p>
-                </div>
-            `;
+                <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:#e74c3c;font-family:'Share Tech Mono',monospace;text-align:center;padding:40px;">
+                    <p style="font-size:64px;margin-bottom:20px;">⚠️</p>
+                    <h2 style="margin-bottom:12px;">Карта не найдена</h2>
+                    <p style="color:#555;">Файл: <code style="color:#c8aa58;background:#1a1b21;padding:4px 8px;border-radius:4px;">${config.image}</code></p>
+                </div>`;
         };
-
         img.src = config.image;
     }
 
     // ===== LEAFLET INIT =====
     function initLeafletMap(config, imageUrl, imageBounds) {
         if (map) { map.remove(); map = null; }
-
         $('map').innerHTML = '';
 
-        const h = imageBounds[0];
-        const w = imageBounds[1];
+        const h = imageBounds[0], w = imageBounds[1];
         const bounds = [[0, 0], [-h, w]];
 
         map = L.map('map', {
@@ -173,24 +110,19 @@
             zoomSnap: 0.5,
             zoomDelta: 0.5,
             attributionControl: false,
-            maxBounds: [
-                [bounds[0][0] + 200, bounds[0][1] - 200],
-                [bounds[1][0] - 200, bounds[1][1] + 200]
-            ],
+            maxBounds: [[200, -200], [-h - 200, w + 200]],
             maxBoundsViscosity: 0.9
         });
 
         imageOverlay = L.imageOverlay(imageUrl, bounds).addTo(map);
         map.fitBounds(bounds);
-
         setTimeout(() => map.setZoom(config.defaultZoom), 100);
 
         markersLayer = L.layerGroup().addTo(map);
 
-        // Events
         map.on('click', onMapClick);
         map.on('mousemove', (e) => {
-            $cursorCoords.textContent = `${e.latlng.lat.toFixed(0)}, ${e.latlng.lng.toFixed(0)}`;
+            $('cursor-coords').textContent = `${e.latlng.lat.toFixed(0)}, ${e.latlng.lng.toFixed(0)}`;
         });
 
         renderMarkers();
@@ -202,46 +134,31 @@
         if (!markersLayer) return;
         markersLayer.clearLayers();
 
-        const activeCategories = getActiveFilters();
-
-        const filtered = markers.filter(m =>
-            m.mapId === currentMapId && activeCategories.includes(m.category)
-        );
+        const active = getActiveFilters();
+        const filtered = markers.filter(m => m.mapId === currentMapId && active.includes(m.category));
 
         filtered.forEach(data => {
             const iconCfg = ICON_CONFIG[data.category] || ICON_CONFIG.loot;
 
             const customIcon = L.divIcon({
-                html: `<div class="marker-icon-wrapper marker-cat-${data.category}">
-                    <span style="font-size:15px">${iconCfg.emoji}</span>
-                </div>`,
+                html: `<div class="marker-icon-wrapper marker-cat-${data.category}"><span style="font-size:15px">${iconCfg.emoji}</span></div>`,
                 className: 'custom-marker-icon',
                 iconSize: [34, 34],
                 iconAnchor: [17, 17]
             });
 
-            const marker = L.marker([data.lat, data.lng], {
-                icon: customIcon,
-                title: data.name
-            });
-
-            marker.bindTooltip(data.name, {
-                direction: 'top',
-                offset: [0, -22]
-            });
-
+            const marker = L.marker([data.lat, data.lng], { icon: customIcon, title: data.name });
+            marker.bindTooltip(data.name, { direction: 'top', offset: [0, -22] });
             marker.on('click', (e) => {
                 L.DomEvent.stopPropagation(e);
                 openInfoPanel(data);
             });
-
             marker.addTo(markersLayer);
         });
 
         updateFilterCounts();
     }
 
-    // ===== FILTER COUNTS =====
     function updateFilterCounts() {
         Object.keys(ICON_CONFIG).forEach(cat => {
             const count = markers.filter(m => m.mapId === currentMapId && m.category === cat).length;
@@ -250,7 +167,6 @@
         });
     }
 
-    // ===== FILTERS =====
     function getActiveFilters() {
         const active = [];
         document.querySelectorAll('.filter-group input[type="checkbox"]').forEach(cb => {
@@ -260,9 +176,9 @@
     }
 
     function toggleAllFilters() {
-        const checkboxes = document.querySelectorAll('.filter-group input[type="checkbox"]');
-        const allChecked = Array.from(checkboxes).every(cb => cb.checked);
-        checkboxes.forEach(cb => cb.checked = !allChecked);
+        const cbs = document.querySelectorAll('.filter-group input[type="checkbox"]');
+        const allChecked = Array.from(cbs).every(cb => cb.checked);
+        cbs.forEach(cb => cb.checked = !allChecked);
         renderMarkers();
     }
 
@@ -271,51 +187,48 @@
         const iconCfg = ICON_CONFIG[data.category] || ICON_CONFIG.loot;
         const mapCfg = MAPS_CONFIG.find(m => m.id === data.mapId);
 
-        $infoTitle.textContent = data.name;
-        $infoCategory.textContent = `${iconCfg.emoji} ${iconCfg.label}`;
-        $infoCategory.style.color = iconCfg.color;
-        $infoCategory.style.borderColor = iconCfg.color;
-        $infoText.textContent = data.description || 'Нет описания';
-        $infoCoords.textContent = `${data.lat.toFixed(0)}, ${data.lng.toFixed(0)}`;
-        $infoMapName.textContent = mapCfg ? mapCfg.name : data.mapId;
+        $('info-title').textContent = data.name;
+        $('info-category').textContent = `${iconCfg.emoji} ${iconCfg.label}`;
+        $('info-category').style.color = iconCfg.color;
+        $('info-category').style.borderColor = iconCfg.color;
+        $('info-text').textContent = data.description || 'Нет описания';
+        $('info-coords').textContent = `${data.lat.toFixed(0)}, ${data.lng.toFixed(0)}`;
+        $('info-map-name').textContent = mapCfg ? mapCfg.name : data.mapId;
 
+        const img = $('info-image');
+        const noImg = $('info-no-image');
         if (data.screenshot) {
-            $infoImage.src = data.screenshot;
-            $infoImage.style.display = 'block';
-            $infoNoImage.classList.add('hidden');
-            $infoImage.onerror = () => {
-                $infoImage.style.display = 'none';
-                $infoNoImage.classList.remove('hidden');
-            };
+            img.src = data.screenshot;
+            img.style.display = 'block';
+            noImg.classList.add('hidden');
+            img.onerror = () => { img.style.display = 'none'; noImg.classList.remove('hidden'); };
         } else {
-            $infoImage.style.display = 'none';
-            $infoNoImage.classList.remove('hidden');
+            img.style.display = 'none';
+            noImg.classList.remove('hidden');
         }
 
-        // Show edit/delete only in admin mode
-        $infoActions.classList.toggle('hidden', !isAdminMode);
-
-        $infoPanel.dataset.markerId = data.id;
-        $infoPanel.classList.remove('hidden');
+        $('info-actions').classList.toggle('hidden', !isAdminMode);
+        $('info-panel').dataset.markerId = data.id;
+        $('info-panel').classList.remove('hidden');
     }
 
     function closeInfoPanel() {
-        $infoPanel.classList.add('hidden');
+        $('info-panel').classList.add('hidden');
     }
 
-    // ===== ADMIN MODE =====
+    // ===== ADMIN =====
     function showAdminLogin() {
         if (isAdminMode) {
-            // Logout
             isAdminMode = false;
-            $adminToggle.textContent = '🔒';
-            $adminToggle.classList.remove('active');
+            $('btn-admin-toggle').textContent = '🔒';
+            $('btn-admin-toggle').classList.remove('active');
             $('admin-tools').classList.add('hidden');
-            $infoActions.classList.add('hidden');
+            $('info-actions').classList.add('hidden');
+            stopAddingMarker();
             notify('Режим просмотра');
             return;
         }
-        $adminModal.classList.remove('hidden');
+        $('admin-modal').classList.remove('hidden');
         $('admin-password').value = '';
         $('admin-password').focus();
         $('admin-error').classList.add('hidden');
@@ -323,14 +236,12 @@
 
     function handleAdminLogin(e) {
         e.preventDefault();
-        const password = $('admin-password').value;
-
-        if (password === ADMIN_PASSWORD) {
+        if ($('admin-password').value === ADMIN_PASSWORD) {
             isAdminMode = true;
-            $adminToggle.textContent = '🔓';
-            $adminToggle.classList.add('active');
+            $('btn-admin-toggle').textContent = '🔓';
+            $('btn-admin-toggle').classList.add('active');
             $('admin-tools').classList.remove('hidden');
-            $adminModal.classList.add('hidden');
+            $('admin-modal').classList.add('hidden');
             notify('Режим редактирования активирован');
         } else {
             $('admin-error').classList.remove('hidden');
@@ -343,48 +254,47 @@
     function onMapClick(e) {
         if (!isAddingMarker) return;
 
-        $formLat.value = e.latlng.lat.toFixed(2);
-        $formLng.value = e.latlng.lng.toFixed(2);
+        $('form-lat').value = e.latlng.lat.toFixed(2);
+        $('form-lng').value = e.latlng.lng.toFixed(2);
 
-        $formCoordsHint.classList.add('selected');
-        $formCoordsHint.querySelector('.coords-icon').textContent = '✅';
-        $formCoordsHint.querySelector('.coords-text').textContent =
-            `Выбрано: ${e.latlng.lat.toFixed(0)}, ${e.latlng.lng.toFixed(0)}`;
+        const hint = $('form-coords-hint');
+        hint.classList.add('selected');
+        hint.querySelector('.coords-icon').textContent = '✅';
+        hint.querySelector('.coords-text').textContent = `Выбрано: ${e.latlng.lat.toFixed(0)}, ${e.latlng.lng.toFixed(0)}`;
 
         if (window._tempMarker) map.removeLayer(window._tempMarker);
         window._tempMarker = L.circleMarker(e.latlng, {
-            radius: 12,
-            color: '#c8aa58',
-            fillColor: '#c8aa58',
-            fillOpacity: 0.4,
-            weight: 2,
-            dashArray: '4'
+            radius: 12, color: '#c8aa58', fillColor: '#c8aa58',
+            fillOpacity: 0.4, weight: 2, dashArray: '4'
         }).addTo(map);
     }
 
     // ===== ADD / EDIT / DELETE =====
     function startAddingMarker() {
         if (!isAdminMode) return;
-
         isAddingMarker = true;
         editingMarkerId = null;
 
         $('marker-form').reset();
-        $formId.value = '';
-        $formCoordsHint.classList.remove('selected');
-        $formCoordsHint.querySelector('.coords-icon').textContent = '📍';
-        $formCoordsHint.querySelector('.coords-text').textContent = 'Нажмите на карту, чтобы выбрать позицию';
-        $('modal-title').textContent = 'Добавить точку';
+        $('form-id').value = '';
 
-        $markerModal.classList.remove('hidden');
+        const hint = $('form-coords-hint');
+        hint.classList.remove('selected');
+        hint.querySelector('.coords-icon').textContent = '📍';
+        hint.querySelector('.coords-text').textContent = 'Нажмите на карту';
+
+        $('form-panel-title').textContent = 'ДОБАВИТЬ ТОЧКУ';
+        $('marker-form-panel').classList.remove('hidden');
+        $('adding-hint').classList.remove('hidden');
         $('map').style.cursor = 'crosshair';
     }
 
     function stopAddingMarker() {
         isAddingMarker = false;
-        $markerModal.classList.add('hidden');
+        $('marker-form-panel').classList.add('hidden');
+        $('adding-hint').classList.add('hidden');
         $('map').style.cursor = '';
-        if (window._tempMarker) {
+        if (window._tempMarker && map) {
             map.removeLayer(window._tempMarker);
             window._tempMarker = null;
         }
@@ -392,51 +302,50 @@
 
     function startEditingMarker() {
         if (!isAdminMode) return;
-
-        const markerId = $infoPanel.dataset.markerId;
-        const data = markers.find(m => m.id === markerId);
+        const id = $('info-panel').dataset.markerId;
+        const data = markers.find(m => m.id === id);
         if (!data) return;
 
         isAddingMarker = true;
-        editingMarkerId = markerId;
+        editingMarkerId = id;
 
-        $formId.value = data.id;
-        $formName.value = data.name;
-        $formCategory.value = data.category;
-        $formDescription.value = data.description || '';
-        $formScreenshot.value = data.screenshot || '';
-        $formLat.value = data.lat;
-        $formLng.value = data.lng;
+        $('form-id').value = data.id;
+        $('form-name').value = data.name;
+        $('form-category').value = data.category;
+        $('form-description').value = data.description || '';
+        $('form-screenshot').value = data.screenshot || '';
+        $('form-lat').value = data.lat;
+        $('form-lng').value = data.lng;
 
-        $formCoordsHint.classList.add('selected');
-        $formCoordsHint.querySelector('.coords-icon').textContent = '✅';
-        $formCoordsHint.querySelector('.coords-text').textContent =
-            `${data.lat.toFixed(0)}, ${data.lng.toFixed(0)} — нажмите на карту для изменения`;
+        const hint = $('form-coords-hint');
+        hint.classList.add('selected');
+        hint.querySelector('.coords-icon').textContent = '✅';
+        hint.querySelector('.coords-text').textContent = `${data.lat.toFixed(0)}, ${data.lng.toFixed(0)} — кликните для изменения`;
 
-        $('modal-title').textContent = 'Редактировать точку';
-        $markerModal.classList.remove('hidden');
+        $('form-panel-title').textContent = 'РЕДАКТИРОВАТЬ';
+        $('marker-form-panel').classList.remove('hidden');
+        $('adding-hint').classList.remove('hidden');
         $('map').style.cursor = 'crosshair';
     }
 
     function saveMarker(e) {
         e.preventDefault();
-
-        const lat = parseFloat($formLat.value);
-        const lng = parseFloat($formLng.value);
+        const lat = parseFloat($('form-lat').value);
+        const lng = parseFloat($('form-lng').value);
 
         if (isNaN(lat) || isNaN(lng)) {
-            notify('⚠️ Нажмите на карту чтобы указать позицию!');
+            notify('⚠️ Сначала кликните на карту!');
             return;
         }
 
         const data = {
-            id: $formId.value || generateId(),
+            id: $('form-id').value || generateId(),
             mapId: currentMapId,
-            name: $formName.value.trim(),
-            category: $formCategory.value,
+            name: $('form-name').value.trim(),
+            category: $('form-category').value,
             lat, lng,
-            description: $formDescription.value.trim(),
-            screenshot: $formScreenshot.value.trim()
+            description: $('form-description').value.trim(),
+            screenshot: $('form-screenshot').value.trim()
         };
 
         if (editingMarkerId) {
@@ -456,10 +365,9 @@
 
     function deleteMarker() {
         if (!isAdminMode) return;
-        const markerId = $infoPanel.dataset.markerId;
+        const id = $('info-panel').dataset.markerId;
         if (!confirm('Удалить эту точку?')) return;
-
-        markers = markers.filter(m => m.id !== markerId);
+        markers = markers.filter(m => m.id !== id);
         saveMarkersLocal();
         renderMarkers();
         closeInfoPanel();
@@ -468,14 +376,12 @@
 
     // ===== EXPORT / IMPORT =====
     function exportMarkers() {
-        const data = JSON.stringify(markers, null, 2);
-        const blob = new Blob([data], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
+        const blob = new Blob([JSON.stringify(markers, null, 2)], { type: 'application/json' });
         const a = document.createElement('a');
-        a.href = url;
+        a.href = URL.createObjectURL(blob);
         a.download = `tarkov_markers_${Date.now()}.json`;
         a.click();
-        URL.revokeObjectURL(url);
+        URL.revokeObjectURL(a.href);
         notify('📥 Маркеры экспортированы');
     }
 
@@ -492,9 +398,7 @@
                     renderMarkers();
                     notify(`📤 Импортировано ${imported.length} точек`);
                 }
-            } catch (err) {
-                notify('❌ Ошибка импорта: ' + err.message);
-            }
+            } catch (err) { notify('❌ Ошибка: ' + err.message); }
         };
         reader.readAsText(file);
         e.target.value = '';
@@ -505,79 +409,62 @@
         const el = $('notification');
         $('notification-text').textContent = text;
         el.classList.remove('hidden');
-
-        // Trigger reflow for animation
         void el.offsetWidth;
         el.classList.add('show');
-
         setTimeout(() => {
             el.classList.remove('show');
             setTimeout(() => el.classList.add('hidden'), 300);
         }, 2500);
     }
 
-    // ===== HELPERS =====
     function generateId() {
         return currentMapId + '_' + Date.now().toString(36) + '_' + Math.random().toString(36).substr(2, 5);
     }
 
-    // ===== EVENT LISTENERS =====
+    // ===== EVENTS =====
     function setupEventListeners() {
-        // Filters
         document.querySelectorAll('.filter-group input[type="checkbox"]').forEach(cb => {
             cb.addEventListener('change', renderMarkers);
         });
         $('btn-toggle-all').addEventListener('click', toggleAllFilters);
 
-        // Info panel
         $('close-info').addEventListener('click', closeInfoPanel);
         $('btn-edit-marker').addEventListener('click', startEditingMarker);
         $('btn-delete-marker').addEventListener('click', deleteMarker);
 
-        // Admin
-        $adminToggle.addEventListener('click', showAdminLogin);
+        $('btn-admin-toggle').addEventListener('click', showAdminLogin);
         $('admin-form').addEventListener('submit', handleAdminLogin);
-        $('btn-cancel-admin').addEventListener('click', () => $adminModal.classList.add('hidden'));
-        $('btn-close-admin-modal').addEventListener('click', () => $adminModal.classList.add('hidden'));
+        $('btn-cancel-admin').addEventListener('click', () => $('admin-modal').classList.add('hidden'));
+        $('btn-close-admin-modal').addEventListener('click', () => $('admin-modal').classList.add('hidden'));
 
-        // Add marker
         $('btn-add-marker').addEventListener('click', startAddingMarker);
-
-        // Marker modal
         $('marker-form').addEventListener('submit', saveMarker);
-        $('btn-cancel-modal').addEventListener('click', stopAddingMarker);
-        $('btn-close-modal').addEventListener('click', stopAddingMarker);
+        $('btn-cancel-form').addEventListener('click', stopAddingMarker);
+        $('btn-close-form').addEventListener('click', stopAddingMarker);
 
-        // Modal overlays close on click
-        document.querySelectorAll('.modal-overlay').forEach(overlay => {
-            overlay.addEventListener('click', () => {
-                $markerModal.classList.add('hidden');
-                $adminModal.classList.add('hidden');
-                stopAddingMarker();
+        document.querySelectorAll('.modal-overlay').forEach(o => {
+            o.addEventListener('click', () => {
+                $('admin-modal').classList.add('hidden');
             });
         });
 
-        // Export / Import
         $('btn-export').addEventListener('click', exportMarkers);
         $('btn-import').addEventListener('click', () => $('import-file').click());
         $('import-file').addEventListener('change', importMarkers);
 
-        // ESC key
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
-                if (!$markerModal.classList.contains('hidden')) stopAddingMarker();
-                if (!$adminModal.classList.contains('hidden')) $adminModal.classList.add('hidden');
+                if (isAddingMarker) stopAddingMarker();
+                if (!$('admin-modal').classList.contains('hidden')) $('admin-modal').classList.add('hidden');
                 closeInfoPanel();
             }
         });
 
-        // Screenshot click → fullscreen
-        $infoImage.addEventListener('click', () => {
-            if ($infoImage.src) window.open($infoImage.src, '_blank');
+        $('info-image').addEventListener('click', () => {
+            const src = $('info-image').src;
+            if (src) window.open(src, '_blank');
         });
     }
 
-    // ===== START =====
     document.addEventListener('DOMContentLoaded', init);
-
 })();
