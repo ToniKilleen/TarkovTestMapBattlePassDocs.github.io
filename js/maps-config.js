@@ -68,7 +68,7 @@ const MAPS_CONFIG = [
         name: 'Завод',
         image: 'images/maps/factory.jpg',
         defaultZoom: 0,
-        minZoom: -1,
+        minZoom: -3,
         maxZoom: 4
     },
     {
@@ -84,7 +84,7 @@ const MAPS_CONFIG = [
         name: 'Ледокол',
         image: 'images/maps/icebreaker.jpg',
         defaultZoom: 0,
-        minZoom: -3,
+        minZoom: -5,
         maxZoom: 4
     }
 ];
