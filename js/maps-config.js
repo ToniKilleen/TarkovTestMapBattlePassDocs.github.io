@@ -81,72 +81,59 @@ const MAPS_CONFIG = [
     }
 ];
 
-/*
- * ИКОНКИ КАТЕГОРИЙ
- *
- * icon: путь к PNG файлу (32x32 или 64x64, прозрачный фон)
- * emoji: fallback если картинка не загрузится
- * color: цвет рамки маркера
- * label: название для UI
- *
- * Чтобы добавить новую категорию:
- * 1. Добавьте PNG в images/icons/
- * 2. Добавьте запись сюда
- * 3. Добавьте чекбокс в index.html в filter-group
- */
 const ICON_CONFIG = {
-    loot: {
+    findocs: {
         icon: 'images/icons/findocs.png',
         emoji: '📃',
         color: '#f1c40f',
         label: 'Финансовая документация'
     },
-    loot: {
+    lpihvk: {
         icon: 'images/icons/lpihvk.png',
-        emoji: '📃',
-        color: '#f1c40f',
-        label: 'Личные Данные ЧВК'
+        emoji: '📋',
+        color: '#3498db',
+        label: 'Личные данные ЧВК'
     },
-	    loot: {
+    proectdocs: {
         icon: 'images/icons/proectdocs.png',
-        emoji: '📃',
-        color: '#f1c40f',
+        emoji: '📐',
+        color: '#2ecc71',
         label: 'Проектная документация'
     },
-	    loot: {
+    texdocs: {
         icon: 'images/icons/texdocs.png',
-        emoji: '📃',
-        color: '#f1c40f',
-        label: 'Чертежи и тех документация'
+        emoji: '📏',
+        color: '#e67e22',
+        label: 'Чертежи и тех. документация'
     },
-	    loot: {
+    testdocs: {
         icon: 'images/icons/testdock.png',
-        emoji: '📃',
-        color: '#f1c40f',
+        emoji: '🧪',
+        color: '#9b59b6',
         label: 'Тестовая документация'
     },
-	    loot: {
+    polsdocs: {
         icon: 'images/icons/polsdocs.png',
-        emoji: '📃',
-        color: '#f1c40f',
+        emoji: '📖',
+        color: '#1abc9c',
         label: 'Пользовательская документация'
     },
-	    loot: {
+    meddocs: {
         icon: 'images/icons/meddocs.png',
-        emoji: '📃',
-        color: '#f1c40f',
+        emoji: '💊',
+        color: '#e91e63',
         label: 'Медицинская документация'
     },
-	    loot: {
+    expdocs: {
         icon: 'images/icons/expdocs.png',
-        emoji: '📃',
-        color: '#f1c40f',
+        emoji: '🔧',
+        color: '#ff9800',
         label: 'Эксплуатационная документация'
     },
-	    loot: {
+    secretdocs: {
         icon: 'images/icons/secretdocs.png',
-        emoji: '📃',
-        color: '#f1c40f',
+        emoji: '🔒',
+        color: '#e74c3c',
         label: 'Секретная документация'
     }
 };
