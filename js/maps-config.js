@@ -68,7 +68,7 @@ const MAPS_CONFIG = [
         name: 'Завод',
         image: 'images/maps/factory.jpg',
         defaultZoom: 0,
-        minZoom: -3,
+        minZoom: -1,
         maxZoom: 4
     },
     {
@@ -78,23 +78,75 @@ const MAPS_CONFIG = [
         defaultZoom: -1,
         minZoom: -3,
         maxZoom: 4
-    },
-	{
-        id: 'icebreaker',
-        name: 'Ледокол',
-        image: 'images/maps/icebreaker.jpg',
-        defaultZoom: 0,
-        minZoom: -5,
-        maxZoom: 4
     }
 ];
 
+/*
+ * ИКОНКИ КАТЕГОРИЙ
+ *
+ * icon: путь к PNG файлу (32x32 или 64x64, прозрачный фон)
+ * emoji: fallback если картинка не загрузится
+ * color: цвет рамки маркера
+ * label: название для UI
+ *
+ * Чтобы добавить новую категорию:
+ * 1. Добавьте PNG в images/icons/
+ * 2. Добавьте запись сюда
+ * 3. Добавьте чекбокс в index.html в filter-group
+ */
 const ICON_CONFIG = {
-    loot:    { emoji: '💰', color: '#f1c40f', label: 'Лут' },
-    key:     { emoji: '🔑', color: '#3498db', label: 'Ключ' },
-    extract: { emoji: '🚪', color: '#2ecc71', label: 'Выход' },
-    boss:    { emoji: '💀', color: '#e74c3c', label: 'Босс' },
-    medical: { emoji: '💊', color: '#e91e63', label: 'Медицина' },
-    weapon:  { emoji: '🔫', color: '#ff9800', label: 'Оружие' },
-    quest:   { emoji: '📋', color: '#9b59b6', label: 'Квест' }
+    loot: {
+        icon: 'images/icons/findocs.png',
+        emoji: '📃',
+        color: '#f1c40f',
+        label: 'Финансовая документация'
+    },
+    loot: {
+        icon: 'images/icons/lpihvk.png',
+        emoji: '📃',
+        color: '#f1c40f',
+        label: 'Личные Данные ЧВК'
+    },
+	    loot: {
+        icon: 'images/icons/proectdocs.png',
+        emoji: '📃',
+        color: '#f1c40f',
+        label: 'Проектная документация'
+    },
+	    loot: {
+        icon: 'images/icons/texdocs.png',
+        emoji: '📃',
+        color: '#f1c40f',
+        label: 'Чертежи и тех документация'
+    },
+	    loot: {
+        icon: 'images/icons/testdock.png',
+        emoji: '📃',
+        color: '#f1c40f',
+        label: 'Тестовая документация'
+    },
+	    loot: {
+        icon: 'images/icons/polsdocs.png',
+        emoji: '📃',
+        color: '#f1c40f',
+        label: 'Пользовательская документация'
+    },
+	    loot: {
+        icon: 'images/icons/meddocs.png',
+        emoji: '📃',
+        color: '#f1c40f',
+        label: 'Медицинская документация'
+    },
+	    loot: {
+        icon: 'images/icons/expdocs.png',
+        emoji: '📃',
+        color: '#f1c40f',
+        label: 'Эксплуатационная документация'
+    },
+	    loot: {
+        icon: 'images/icons/secretdocs.png',
+        emoji: '📃',
+        color: '#f1c40f',
+        label: 'Секретная документация'
+    }
 };

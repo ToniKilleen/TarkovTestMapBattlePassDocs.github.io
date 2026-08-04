@@ -13,15 +13,64 @@
     let isAddingMarker = false;
     let editingMarkerId = null;
 
-    // ===== DOM =====
+    // Кэш проверенных иконок (чтобы не проверять каждый раз)
+    let iconCache = {};
+
     const $ = id => document.getElementById(id);
 
     // ===== INIT =====
     function init() {
-        loadMarkers();
-        renderMapTabs();
-        setupEventListeners();
-        switchMap(MAPS_CONFIG[0].id);
+        preloadIcons().then(() => {
+            loadMarkers();
+            renderMapTabs();
+            setupEventListeners();
+            switchMap(MAPS_CONFIG[0].id);
+        });
+    }
+
+    // ===== PRELOAD ICONS =====
+    // Проверяем какие иконки реально существуют
+    function preloadIcons() {
+        const promises = Object.keys(ICON_CONFIG).map(cat => {
+            return new Promise(resolve => {
+                const cfg = ICON_CONFIG[cat];
+                if (!cfg.icon) {
+                    iconCache[cat] = false;
+                    resolve();
+                    return;
+                }
+                const img = new Image();
+                img.onload = () => {
+                    iconCache[cat] = true;
+                    console.log(`✅ Иконка [${cat}]: ${cfg.icon}`);
+                    resolve();
+                };
+                img.onerror = () => {
+                    iconCache[cat] = false;
+                    console.warn(`⚠️ Иконка [${cat}] не найдена: ${cfg.icon} — используется эмодзи`);
+                    resolve();
+                };
+                img.src = cfg.icon;
+            });
+        });
+        return Promise.all(promises);
+    }
+
+    // ===== СОЗДАНИЕ HTML ДЛЯ ИКОНКИ МАРКЕРА =====
+    function createMarkerIconHtml(category) {
+        const cfg = ICON_CONFIG[category] || ICON_CONFIG.loot;
+        const hasCustomIcon = iconCache[category];
+
+        let innerHtml;
+        if (hasCustomIcon) {
+            // Кастомная PNG иконка
+            innerHtml = `<img src="${cfg.icon}" alt="${cfg.label}" style="width:20px;height:20px;object-fit:contain;">`;
+        } else {
+            // Fallback на эмодзи
+            innerHtml = `<span style="font-size:15px;line-height:1;">${cfg.emoji}</span>`;
+        }
+
+        return `<div class="marker-icon-wrapper marker-cat-${category}">${innerHtml}</div>`;
     }
 
     // ===== MARKERS =====
@@ -138,10 +187,10 @@
         const filtered = markers.filter(m => m.mapId === currentMapId && active.includes(m.category));
 
         filtered.forEach(data => {
-            const iconCfg = ICON_CONFIG[data.category] || ICON_CONFIG.loot;
+            const iconHtml = createMarkerIconHtml(data.category);
 
             const customIcon = L.divIcon({
-                html: `<div class="marker-icon-wrapper marker-cat-${data.category}"><span style="font-size:15px">${iconCfg.emoji}</span></div>`,
+                html: iconHtml,
                 className: 'custom-marker-icon',
                 iconSize: [34, 34],
                 iconAnchor: [17, 17]
@@ -187,8 +236,16 @@
         const iconCfg = ICON_CONFIG[data.category] || ICON_CONFIG.loot;
         const mapCfg = MAPS_CONFIG.find(m => m.id === data.mapId);
 
+        // Иконка в info badge
+        let badgeIcon;
+        if (iconCache[data.category]) {
+            badgeIcon = `<img src="${iconCfg.icon}" style="width:16px;height:16px;vertical-align:middle;margin-right:4px;">`;
+        } else {
+            badgeIcon = iconCfg.emoji;
+        }
+
         $('info-title').textContent = data.name;
-        $('info-category').textContent = `${iconCfg.emoji} ${iconCfg.label}`;
+        $('info-category').innerHTML = `${badgeIcon} ${iconCfg.label}`;
         $('info-category').style.color = iconCfg.color;
         $('info-category').style.borderColor = iconCfg.color;
         $('info-text').textContent = data.description || 'Нет описания';
@@ -443,9 +500,7 @@
         $('btn-close-form').addEventListener('click', stopAddingMarker);
 
         document.querySelectorAll('.modal-overlay').forEach(o => {
-            o.addEventListener('click', () => {
-                $('admin-modal').classList.add('hidden');
-            });
+            o.addEventListener('click', () => $('admin-modal').classList.add('hidden'));
         });
 
         $('btn-export').addEventListener('click', exportMarkers);
