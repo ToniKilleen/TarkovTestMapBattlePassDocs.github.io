@@ -66,10 +66,38 @@ body {
     cursor: pointer; font-family: var(--font-main); font-size: 13px; font-weight: 700;
     letter-spacing: 1.5px; text-transform: uppercase; transition: all var(--transition);
     border-radius: 6px; display: flex; align-items: center; gap: 6px; white-space: nowrap;
+    position: relative;
 }
 .view-btn:hover { color: var(--text); background: var(--bg-hover); }
 .view-btn.active { color: var(--bg-dark); background: var(--accent); }
 .view-icon { font-size: 15px; }
+
+/* Бейдж с количеством ожидающих */
+.pending-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    background: var(--danger);
+    color: white;
+    border-radius: 9px;
+    font-size: 11px;
+    font-weight: 700;
+    margin-left: 4px;
+    animation: badge-pulse 2s ease-in-out infinite;
+}
+
+.view-btn.active .pending-badge {
+    background: var(--bg-dark);
+    color: var(--accent);
+}
+
+@keyframes badge-pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.15); }
+}
 
 .map-tabs {
     display: flex; gap: 2px; background: var(--bg-dark); padding: 3px;
@@ -83,6 +111,32 @@ body {
 }
 .map-tab:hover { color: var(--text); background: var(--bg-hover); }
 .map-tab.active { color: var(--bg-dark); background: var(--accent); }
+
+/* Кнопка ручного обновления */
+.btn-refresh {
+    width: 40px; height: 40px; border-radius: 50%;
+    border: 1px solid var(--border); background: var(--bg-card);
+    color: var(--text-dim); cursor: pointer;
+    transition: all var(--transition);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+}
+.btn-refresh:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--bg-hover);
+}
+.btn-refresh.refreshing .refresh-icon {
+    animation: spin 0.8s linear infinite;
+}
+.refresh-icon {
+    font-size: 16px;
+    display: inline-block;
+}
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
 
 .admin-toggle {
     width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--border);
@@ -174,9 +228,37 @@ body {
 .coords-display {
     display: flex; align-items: center; justify-content: space-between;
     padding: 8px 10px; background: var(--bg-dark); border-radius: 6px;
+    margin-bottom: 8px;
 }
 .coords-label { font-size: 10px; letter-spacing: 2px; color: var(--text-muted); font-weight: 700; }
 .coords-value { font-family: var(--font-mono); font-size: 12px; color: var(--accent); }
+
+/* Индикатор автообновления */
+.autorefresh-status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    background: var(--bg-dark);
+    border-radius: 6px;
+    font-size: 10px;
+    color: var(--text-muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    font-weight: 600;
+}
+.autorefresh-dot {
+    width: 8px;
+    height: 8px;
+    background: var(--success);
+    border-radius: 50%;
+    animation: pulse-dot 2s ease-in-out infinite;
+}
+@keyframes pulse-dot {
+    0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.5); }
+    50% { opacity: 0.5; box-shadow: 0 0 0 6px rgba(46, 204, 113, 0); }
+}
+.autorefresh-text { color: var(--success); }
 
 /* ==== MAP ==== */
 #map-container {
@@ -533,7 +615,6 @@ body {
 .marker-icon-wrapper:hover { transform: scale(1.4); box-shadow: 0 0 16px rgba(200,170,88,0.5); z-index: 1000 !important; }
 .marker-icon-wrapper img { width: 20px; height: 20px; object-fit: contain; image-rendering: crisp-edges; }
 
-/* Категории */
 .marker-cat-findocs    { border-color: #f1c40f; }
 .marker-cat-lpihvk     { border-color: #3498db; }
 .marker-cat-proectdocs { border-color: #2ecc71; }
@@ -544,7 +625,6 @@ body {
 .marker-cat-expdocs    { border-color: #ff9800; }
 .marker-cat-secretdocs { border-color: #e74c3c; }
 
-/* Предложения на карте */
 .suggestion-marker { z-index: 400; }
 .marker-suggestion {
     opacity: 0.9;

@@ -25,11 +25,17 @@
             <div class="view-switcher">
                 <button id="view-map" class="view-btn active"><span class="view-icon">🗺</span><span>КАРТА</span></button>
                 <button id="view-catalog" class="view-btn"><span class="view-icon">📚</span><span>КАТАЛОГ</span></button>
-                <button id="view-suggestions" class="view-btn hidden"><span class="view-icon">📝</span><span>ПРЕДЛОЖЕНИЯ</span></button>
+                <button id="view-suggestions" class="view-btn hidden">
+                    <span class="view-icon">📝</span><span>ПРЕДЛОЖЕНИЯ</span>
+                    <span id="pending-badge" class="pending-badge hidden">0</span>
+                </button>
             </div>
             <div id="map-selector" class="map-tabs"></div>
         </div>
         <div class="header-right">
+            <button id="btn-refresh" class="btn-refresh hidden" title="Обновить данные">
+                <span class="refresh-icon">🔄</span>
+            </button>
             <div id="user-info" class="user-info hidden">
                 <span id="user-role-badge" class="role-badge"></span>
                 <span id="user-name" class="user-name"></span>
@@ -59,6 +65,10 @@
                 <div class="coords-display">
                     <span class="coords-label">КУРСОР</span>
                     <span id="cursor-coords" class="coords-value">—</span>
+                </div>
+                <div id="autorefresh-status" class="autorefresh-status hidden">
+                    <span class="autorefresh-dot"></span>
+                    <span class="autorefresh-text">Автообновление</span>
                 </div>
             </div>
         </aside>

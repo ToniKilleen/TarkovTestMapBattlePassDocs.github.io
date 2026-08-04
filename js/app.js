@@ -1,6 +1,9 @@
 (function () {
     'use strict';
 
+    // ===== НАСТРОЙКИ =====
+    const AUTO_REFRESH_INTERVAL = 15000; // 15 секунд
+
     let map = null;
     let imageOverlay = null;
     let currentMapId = null;
@@ -16,6 +19,9 @@
     let iconCache = {};
     let currentView = 'map';
     let formMode = 'add';
+    let autoRefreshTimer = null;
+    let previousPendingCount = 0;
+    let isTabVisible = true;
 
     const $ = id => document.getElementById(id);
 
@@ -28,10 +34,121 @@
             renderCategoryDropdown();
             setupEventListeners();
             setupScreenshotPaste();
+            setupVisibilityDetection();
             switchMap(MAPS_CONFIG[0].id);
             restoreSession();
             setTimeout(handleUrlParams, 500);
         });
+    }
+
+    // ===== ОТСЛЕЖИВАНИЕ ВИДИМОСТИ ВКЛАДКИ =====
+    // Не тратим трафик если пользователь свернул вкладку
+    function setupVisibilityDetection() {
+        document.addEventListener('visibilitychange', () => {
+            isTabVisible = !document.hidden;
+            console.log('Вкладка ' + (isTabVisible ? 'активна' : 'свёрнута'));
+
+            if (isTabVisible && currentUser) {
+                // Вернулись на вкладку — сразу обновляем
+                refreshData(false);
+            }
+        });
+    }
+
+    // ===== АВТООБНОВЛЕНИЕ =====
+    function startAutoRefresh() {
+        stopAutoRefresh();
+        if (!currentUser) return;
+
+        console.log(`⏰ Автообновление запущено (каждые ${AUTO_REFRESH_INTERVAL / 1000} сек)`);
+        $('autorefresh-status').classList.remove('hidden');
+
+        autoRefreshTimer = setInterval(() => {
+            if (isTabVisible) {
+                refreshData(true);
+            }
+        }, AUTO_REFRESH_INTERVAL);
+    }
+
+    function stopAutoRefresh() {
+        if (autoRefreshTimer) {
+            clearInterval(autoRefreshTimer);
+            autoRefreshTimer = null;
+            console.log('⏰ Автообновление остановлено');
+        }
+        $('autorefresh-status').classList.add('hidden');
+    }
+
+    // Обновление данных (маркеры + предложения)
+    async function refreshData(silent = false) {
+        if (!silent) {
+            $('btn-refresh').classList.add('refreshing');
+        }
+
+        try {
+            const prevCount = suggestions.length;
+
+            await loadMarkers();
+            await loadSuggestions();
+
+            renderMarkers();
+            updatePendingBadge();
+
+            if (currentView === 'suggestions') {
+                const activeTab = document.querySelector('.suggestion-tab.active');
+                renderSuggestions(activeTab?.dataset.status || 'pending');
+            }
+
+            // Уведомление о новых предложениях (только для админа)
+            if (silent && currentUser?.role === 'admin') {
+                const newCount = suggestions.length;
+                if (newCount > prevCount) {
+                    const diff = newCount - prevCount;
+                    notify(`💡 ${diff === 1 ? 'Новое предложение' : `Новых предложений: ${diff}`}!`);
+                    playNotificationSound();
+                }
+            }
+
+            if (!silent) {
+                notify('✅ Данные обновлены');
+            }
+        } catch (err) {
+            console.error('Ошибка обновления:', err);
+            if (!silent) notify('❌ Ошибка обновления');
+        } finally {
+            setTimeout(() => {
+                $('btn-refresh').classList.remove('refreshing');
+            }, 500);
+        }
+    }
+
+    // Звук уведомления (короткий бип)
+    function playNotificationSound() {
+        try {
+            const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIG2m98OScTgwOUarm7blmGgU7k9n1unEiBC13yO/eizEIHWq+8+OWT');
+            audio.volume = 0.3;
+            audio.play().catch(() => {}); // Молча игнорируем если браузер блокирует
+        } catch (e) {}
+    }
+
+    // ===== БЕЙДЖ С КОЛИЧЕСТВОМ ОЖИДАЮЩИХ =====
+    function updatePendingBadge() {
+        const badge = $('pending-badge');
+        if (!currentUser) {
+            badge.classList.add('hidden');
+            return;
+        }
+
+        // Для админа — общее количество pending
+        // Для оператора — только свои
+        const count = suggestions.length;
+
+        if (count > 0) {
+            badge.textContent = count > 99 ? '99+' : count;
+            badge.classList.remove('hidden');
+        } else {
+            badge.classList.add('hidden');
+        }
     }
 
     // ===== URL PARAMS =====
@@ -97,7 +214,11 @@
             try {
                 currentUser = JSON.parse(saved);
                 updateAuthUI();
-                loadSuggestions().then(renderMarkers);
+                loadSuggestions().then(() => {
+                    renderMarkers();
+                    updatePendingBadge();
+                    startAutoRefresh();
+                });
             } catch (e) { localStorage.removeItem('tarkov_user'); }
         }
     }
@@ -115,6 +236,8 @@
             updateAuthUI();
             await loadSuggestions();
             renderMarkers();
+            updatePendingBadge();
+            startAutoRefresh();
             notify(`✅ Добро пожаловать, ${user.username}!`);
         } catch (err) {
             $('login-error').classList.remove('hidden');
@@ -123,6 +246,7 @@
     }
 
     function handleLogout() {
+        stopAutoRefresh();
         currentUser = null;
         suggestions = [];
         localStorage.removeItem('tarkov_user');
@@ -130,6 +254,7 @@
         closeInfoPanel();
         stopAddingMarker();
         renderMarkers();
+        updatePendingBadge();
         notify('Вы вышли из аккаунта');
     }
 
@@ -141,6 +266,7 @@
         $('btn-login-toggle').classList.toggle('hidden', isLoggedIn);
         $('user-info').classList.toggle('hidden', !isLoggedIn);
         $('view-suggestions').classList.toggle('hidden', !isLoggedIn);
+        $('btn-refresh').classList.toggle('hidden', !isLoggedIn);
 
         if (isLoggedIn) {
             $('user-name').textContent = currentUser.username;
@@ -156,9 +282,7 @@
     // ===== LOADING =====
     async function loadMarkers() {
         const dbMarkers = await SupabaseDB.getMarkers();
-        // ВАЖНО: используем только точки из базы, без fallback
         markers = dbMarkers || [];
-        console.log(`Загружено маркеров из БД: ${markers.length}`);
     }
 
     async function loadSuggestions() {
@@ -170,7 +294,6 @@
             } else {
                 suggestions = all.filter(s => s.created_by === currentUser.id);
             }
-            console.log(`Загружено предложений: ${suggestions.length} (роль: ${currentUser.role})`);
         } catch (err) {
             console.error('Ошибка загрузки предложений:', err);
             suggestions = [];
@@ -378,6 +501,7 @@
             $('review-modal').classList.add('hidden');
             await loadSuggestions();
             renderMarkers();
+            updatePendingBadge();
 
             if (currentView === 'suggestions') {
                 const activeTab = document.querySelector('.suggestion-tab.active');
@@ -735,6 +859,7 @@
             markers.push(newMarker);
             await loadSuggestions();
             renderMarkers();
+            updatePendingBadge();
             closeInfoPanel();
             notify('✅ Предложение одобрено');
         } catch (err) { notify('❌ Ошибка: ' + err.message); }
@@ -751,6 +876,7 @@
             await SupabaseDB.reviewSuggestion(suggestion.id, 'rejected', comment || '', currentUser.id);
             await loadSuggestions();
             renderMarkers();
+            updatePendingBadge();
             closeInfoPanel();
             notify('❌ Предложение отклонено');
         } catch (err) { notify('❌ Ошибка: ' + err.message); }
@@ -873,6 +999,7 @@
             if (mode === 'suggest') {
                 await SupabaseDB.addSuggestion(data);
                 await loadSuggestions();
+                updatePendingBadge();
                 notify('💡 Предложение отправлено!');
             } else if (mode === 'edit' && editingMarkerId) {
                 data.id = editingMarkerId;
@@ -1003,6 +1130,9 @@
         $('btn-approve-panel').addEventListener('click', approveSuggestionFromPanel);
         $('btn-reject-panel').addEventListener('click', rejectSuggestionFromPanel);
 
+        // Кнопка ручного обновления
+        $('btn-refresh').addEventListener('click', () => refreshData(false));
+
         $('btn-login-toggle').addEventListener('click', () => {
             $('login-modal').classList.remove('hidden');
             $('login-username').value = '';
@@ -1049,6 +1179,11 @@
                 $('login-modal').classList.add('hidden');
                 $('review-modal').classList.add('hidden');
                 closeInfoPanel();
+            }
+            // F5 = ручное обновление (перехватываем стандартный F5)
+            if (e.key === 'F5' && currentUser) {
+                e.preventDefault();
+                refreshData(false);
             }
         });
 
