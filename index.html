@@ -25,7 +25,7 @@
             <div class="view-switcher">
                 <button id="view-map" class="view-btn active"><span class="view-icon">🗺</span><span>КАРТА</span></button>
                 <button id="view-catalog" class="view-btn"><span class="view-icon">📚</span><span>КАТАЛОГ</span></button>
-                <button id="view-suggestions" class="view-btn"><span class="view-icon">📝</span><span>ПРЕДЛОЖЕНИЯ</span></button>
+                <button id="view-suggestions" class="view-btn hidden"><span class="view-icon">📝</span><span>ПРЕДЛОЖЕНИЯ</span></button>
             </div>
             <div id="map-selector" class="map-tabs"></div>
         </div>
@@ -66,7 +66,7 @@
         <div id="map-container"><div id="map"></div></div>
         <div id="adding-hint" class="adding-hint hidden">📍 КЛИКНИТЕ ПО КАРТЕ</div>
 
-        <!-- MARKER FORM PANEL (admin: добавить / operator: предложить) -->
+        <!-- MARKER FORM PANEL -->
         <div id="marker-form-panel" class="marker-form-panel hidden">
             <div class="marker-form-header">
                 <h3 id="form-panel-title">ДОБАВИТЬ ТОЧКУ</h3>
@@ -135,6 +135,7 @@
                     <div id="info-no-image" class="no-image">📷 Нет скриншота</div>
                 </div>
                 <div class="info-body">
+                    <div id="info-suggestion-badge" class="info-suggestion-badge hidden"></div>
                     <div id="info-category" class="info-badge">—</div>
                     <h2 id="info-title">—</h2>
                     <div id="info-description"><p id="info-text"></p></div>
@@ -143,9 +144,13 @@
                         <div class="meta-row"><span class="meta-label">Карта</span><span id="info-map-name" class="meta-value">—</span></div>
                     </div>
                     <button id="btn-share-marker" class="btn-action btn-ghost btn-small">🔗 Скопировать ссылку</button>
-                    <div id="info-actions" class="hidden">
+                    <div id="info-actions-marker" class="info-actions hidden">
                         <button id="btn-edit-marker" class="btn-action btn-ghost">✏️ Редактировать</button>
                         <button id="btn-delete-marker" class="btn-action btn-danger">🗑️ Удалить</button>
+                    </div>
+                    <div id="info-actions-suggestion" class="info-actions hidden">
+                        <button id="btn-approve-panel" class="btn-action btn-primary">✅ Одобрить</button>
+                        <button id="btn-reject-panel" class="btn-action btn-danger">❌ Отклонить</button>
                     </div>
                 </div>
             </div>
@@ -207,7 +212,7 @@
         </div>
     </div>
 
-    <!-- REVIEW SUGGESTION MODAL (только для админа) -->
+    <!-- REVIEW MODAL -->
     <div id="review-modal" class="modal hidden">
         <div class="modal-overlay"></div>
         <div class="modal-content">

@@ -1,23 +1,24 @@
 (function () {
     'use strict';
 
-    // ===== STATE =====
     let map = null;
     let imageOverlay = null;
     let currentMapId = null;
     let markersLayer = null;
+    let suggestionsLayer = null;
     let markers = [];
+    let suggestions = [];
     let leafletMarkers = {};
-    let currentUser = null; // { id, username, role }
+    let leafletSuggestions = {};
+    let currentUser = null;
     let isAddingMarker = false;
     let editingMarkerId = null;
     let iconCache = {};
     let currentView = 'map';
-    let formMode = 'add'; // 'add' | 'edit' | 'suggest'
+    let formMode = 'add';
 
     const $ = id => document.getElementById(id);
 
-    // ===== INIT =====
     function init() {
         checkUrlParams();
         preloadIcons().then(async () => {
@@ -29,20 +30,20 @@
             setupScreenshotPaste();
             switchMap(MAPS_CONFIG[0].id);
             restoreSession();
-
-            // Если в URL был параметр — обработать после загрузки
             setTimeout(handleUrlParams, 500);
         });
     }
 
-    // ===== URL PARAMS (ссылки на точки) =====
+    // ===== URL PARAMS =====
     let pendingUrlMap = null;
     let pendingUrlMarker = null;
+    let pendingUrlSuggestion = null;
 
     function checkUrlParams() {
         const params = new URLSearchParams(window.location.search);
         pendingUrlMap = params.get('map');
         pendingUrlMarker = params.get('marker');
+        pendingUrlSuggestion = params.get('suggestion');
     }
 
     function handleUrlParams() {
@@ -51,17 +52,13 @@
             if (config) {
                 switchMap(pendingUrlMap);
                 if (pendingUrlMarker) {
-                    setTimeout(() => {
-                        const markerData = markers.find(m => m.id === pendingUrlMarker);
-                        if (markerData) {
-                            highlightAndFocus(pendingUrlMarker);
-                        }
-                    }, 600);
+                    setTimeout(() => highlightAndFocusMarker(pendingUrlMarker), 600);
+                } else if (pendingUrlSuggestion) {
+                    setTimeout(() => highlightAndFocusSuggestion(pendingUrlSuggestion), 600);
                 }
             }
         }
-        // Очищаем URL без перезагрузки
-        if (pendingUrlMap || pendingUrlMarker) {
+        if (pendingUrlMap || pendingUrlMarker || pendingUrlSuggestion) {
             window.history.replaceState({}, '', window.location.pathname);
         }
     }
@@ -89,9 +86,7 @@
     function getCategoryIconHtml(category) {
         const cfg = ICON_CONFIG[category];
         if (!cfg) return '';
-        if (iconCache[category]) {
-            return `<img src="${cfg.icon}" alt="${cfg.label}">`;
-        }
+        if (iconCache[category]) return `<img src="${cfg.icon}" alt="${cfg.label}">`;
         return `<span class="emoji-fallback">${cfg.emoji || '📌'}</span>`;
     }
 
@@ -102,6 +97,7 @@
             try {
                 currentUser = JSON.parse(saved);
                 updateAuthUI();
+                loadSuggestions().then(renderMarkers);
             } catch (e) { localStorage.removeItem('tarkov_user'); }
         }
     }
@@ -110,17 +106,15 @@
         e.preventDefault();
         const username = $('login-username').value.trim();
         const password = $('login-password').value;
-
         try {
             const user = await SupabaseDB.login(username, password);
-            if (!user) {
-                $('login-error').classList.remove('hidden');
-                return;
-            }
+            if (!user) { $('login-error').classList.remove('hidden'); return; }
             currentUser = { id: user.id, username: user.username, role: user.role };
             localStorage.setItem('tarkov_user', JSON.stringify(currentUser));
             $('login-modal').classList.add('hidden');
             updateAuthUI();
+            await loadSuggestions();
+            renderMarkers();
             notify(`✅ Добро пожаловать, ${user.username}!`);
         } catch (err) {
             $('login-error').classList.remove('hidden');
@@ -130,10 +124,12 @@
 
     function handleLogout() {
         currentUser = null;
+        suggestions = [];
         localStorage.removeItem('tarkov_user');
         updateAuthUI();
         closeInfoPanel();
         stopAddingMarker();
+        renderMarkers();
         notify('Вы вышли из аккаунта');
     }
 
@@ -144,6 +140,7 @@
 
         $('btn-login-toggle').classList.toggle('hidden', isLoggedIn);
         $('user-info').classList.toggle('hidden', !isLoggedIn);
+        $('view-suggestions').classList.toggle('hidden', !isLoggedIn);
 
         if (isLoggedIn) {
             $('user-name').textContent = currentUser.username;
@@ -154,17 +151,27 @@
 
         $('admin-tools').classList.toggle('hidden', !isAdmin);
         $('operator-tools').classList.toggle('hidden', !isOperator);
-        $('info-actions').classList.toggle('hidden', !isAdmin);
     }
 
-    // ===== MARKERS (from Supabase) =====
+    // ===== LOADING =====
     async function loadMarkers() {
         const dbMarkers = await SupabaseDB.getMarkers();
-        if (dbMarkers && dbMarkers.length > 0) {
-            markers = dbMarkers;
-        } else {
-            // Fallback на локальный файл
-            markers = JSON.parse(JSON.stringify(DEFAULT_MARKERS));
+        if (dbMarkers && dbMarkers.length > 0) markers = dbMarkers;
+        else markers = JSON.parse(JSON.stringify(DEFAULT_MARKERS));
+    }
+
+    async function loadSuggestions() {
+        if (!currentUser) { suggestions = []; return; }
+        try {
+            const all = await SupabaseDB.getSuggestions('pending');
+            if (currentUser.role === 'admin') {
+                suggestions = all;
+            } else {
+                suggestions = all.filter(s => s.created_by?.username === currentUser.username);
+            }
+        } catch (err) {
+            console.error('Ошибка загрузки предложений:', err);
+            suggestions = [];
         }
     }
 
@@ -204,8 +211,8 @@
             grouped[m.category].push(m);
         });
 
-        const totalResults = Object.values(grouped).reduce((sum, arr) => sum + arr.length, 0);
-        if (query && totalResults === 0) {
+        const total = Object.values(grouped).reduce((sum, arr) => sum + arr.length, 0);
+        if (query && total === 0) {
             grid.innerHTML = `<div class="catalog-no-results"><div class="catalog-no-results-icon">🔍</div><div>Ничего не найдено</div></div>`;
             return;
         }
@@ -252,9 +259,13 @@
         list.innerHTML = '';
 
         try {
-            const suggestions = await SupabaseDB.getSuggestions(status);
+            let sugs = await SupabaseDB.getSuggestions(status);
 
-            if (!suggestions || suggestions.length === 0) {
+            if (currentUser?.role === 'operator') {
+                sugs = sugs.filter(s => s.created_by?.username === currentUser.username);
+            }
+
+            if (!sugs || sugs.length === 0) {
                 list.classList.add('hidden');
                 empty.classList.remove('hidden');
                 empty.textContent = status === 'pending' ? 'Нет ожидающих предложений' :
@@ -265,9 +276,8 @@
             list.classList.remove('hidden');
             empty.classList.add('hidden');
 
-            suggestions.forEach(s => {
+            sugs.forEach(s => {
                 const mapCfg = MAPS_CONFIG.find(m => m.id === s.map_id);
-                const iconCfg = ICON_CONFIG[s.category] || {};
                 const card = document.createElement('div');
                 card.className = `suggestion-card suggestion-${s.status}`;
                 card.innerHTML = `
@@ -288,15 +298,25 @@
                     ${s.description ? `<div class="suggestion-desc">${escapeHtml(s.description)}</div>` : ''}
                     ${s.screenshot ? `<div class="suggestion-screenshot"><img src="${s.screenshot}" alt=""></div>` : ''}
                     ${s.admin_comment ? `<div class="suggestion-comment">💬 ${escapeHtml(s.admin_comment)}</div>` : ''}
+                    <div class="suggestion-actions"></div>
                 `;
 
-                // Кнопка рассмотреть (только для админа и pending)
-                if (currentUser?.role === 'admin' && s.status === 'pending') {
-                    const reviewBtn = document.createElement('button');
-                    reviewBtn.className = 'btn-action btn-primary btn-small';
-                    reviewBtn.textContent = '👁 Рассмотреть';
-                    reviewBtn.addEventListener('click', () => openReviewModal(s));
-                    card.appendChild(reviewBtn);
+                const actionsDiv = card.querySelector('.suggestion-actions');
+
+                if (s.status === 'pending') {
+                    const gotoBtn = document.createElement('button');
+                    gotoBtn.className = 'btn-action btn-ghost btn-small';
+                    gotoBtn.innerHTML = '🗺 На карте';
+                    gotoBtn.addEventListener('click', () => goToSuggestion(s.map_id, s.id));
+                    actionsDiv.appendChild(gotoBtn);
+
+                    if (currentUser?.role === 'admin') {
+                        const reviewBtn = document.createElement('button');
+                        reviewBtn.className = 'btn-action btn-primary btn-small';
+                        reviewBtn.innerHTML = '👁 Рассмотреть';
+                        reviewBtn.addEventListener('click', () => openReviewModal(s));
+                        actionsDiv.appendChild(reviewBtn);
+                    }
                 }
 
                 list.appendChild(card);
@@ -324,8 +344,6 @@
         $('review-suggestion-id').value = suggestion.id;
         $('review-comment').value = '';
         $('review-modal').classList.remove('hidden');
-
-        // Сохраняем данные для одобрения
         $('review-modal').dataset.suggestion = JSON.stringify(suggestion);
     }
 
@@ -337,7 +355,6 @@
         try {
             await SupabaseDB.reviewSuggestion(suggestionId, status, comment, currentUser.id);
 
-            // Если одобрено — добавляем как маркер
             if (approve) {
                 const suggestion = JSON.parse($('review-modal').dataset.suggestion);
                 const newMarker = {
@@ -353,73 +370,61 @@
                 };
                 await SupabaseDB.addMarker(newMarker);
                 markers.push(newMarker);
-                renderMarkers();
             }
 
             $('review-modal').classList.add('hidden');
-            renderSuggestions('pending');
+            await loadSuggestions();
+            renderMarkers();
+
+            if (currentView === 'suggestions') {
+                const activeTab = document.querySelector('.suggestion-tab.active');
+                renderSuggestions(activeTab?.dataset.status || 'pending');
+            }
+
             notify(approve ? '✅ Предложение одобрено и добавлено' : '❌ Предложение отклонено');
+            closeInfoPanel();
         } catch (err) {
             console.error(err);
             notify('❌ Ошибка: ' + err.message);
         }
     }
 
-    // ===== SCREENSHOT PASTE (Ctrl+V) =====
+    // ===== SCREENSHOT UPLOAD =====
     function setupScreenshotPaste() {
-        // Ctrl+V на всей странице когда форма открыта
         document.addEventListener('paste', async (e) => {
             if ($('marker-form-panel').classList.contains('hidden')) return;
-
             const items = e.clipboardData?.items;
             if (!items) return;
-
             for (const item of items) {
                 if (item.type.startsWith('image/')) {
                     e.preventDefault();
-                    const file = item.getAsFile();
-                    await handleScreenshotFile(file);
+                    await handleScreenshotFile(item.getAsFile());
                     return;
                 }
             }
         });
 
-        // Drag & drop
         const dropzone = $('screenshot-dropzone');
-        dropzone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            dropzone.classList.add('dragover');
-        });
-        dropzone.addEventListener('dragleave', () => {
-            dropzone.classList.remove('dragover');
-        });
+        dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.classList.add('dragover'); });
+        dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
         dropzone.addEventListener('drop', async (e) => {
             e.preventDefault();
             dropzone.classList.remove('dragover');
             const file = e.dataTransfer?.files[0];
-            if (file && file.type.startsWith('image/')) {
-                await handleScreenshotFile(file);
-            }
+            if (file && file.type.startsWith('image/')) await handleScreenshotFile(file);
         });
 
-        // File input
         $('screenshot-file').addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (file) await handleScreenshotFile(file);
             e.target.value = '';
         });
 
-        $('btn-browse-screenshot').addEventListener('click', () => {
-            $('screenshot-file').click();
-        });
-
-        $('btn-remove-screenshot').addEventListener('click', () => {
-            clearScreenshotPreview();
-        });
+        $('btn-browse-screenshot').addEventListener('click', () => $('screenshot-file').click());
+        $('btn-remove-screenshot').addEventListener('click', () => clearScreenshotPreview());
     }
 
     async function handleScreenshotFile(file) {
-        // Показать превью
         const reader = new FileReader();
         reader.onload = (e) => {
             $('screenshot-preview-img').src = e.target.result;
@@ -428,14 +433,12 @@
         };
         reader.readAsDataURL(file);
 
-        // Загружаем
         try {
             notify('📷 Загрузка скриншота...');
             const url = await SupabaseDB.uploadScreenshot(file);
             $('form-screenshot').value = url;
             notify('✅ Скриншот загружен');
         } catch (err) {
-            // Fallback — data URL
             const dataUrl = await SupabaseDB.fileToDataUrl(file);
             $('form-screenshot').value = dataUrl;
             notify('📷 Скриншот сохранён локально');
@@ -508,6 +511,8 @@
         setTimeout(() => map.setZoom(config.defaultZoom), 100);
 
         markersLayer = L.layerGroup().addTo(map);
+        suggestionsLayer = L.layerGroup().addTo(map);
+
         map.on('click', onMapClick);
         map.on('mousemove', (e) => {
             $('cursor-coords').textContent = `${e.latlng.lat.toFixed(0)}, ${e.latlng.lng.toFixed(0)}`;
@@ -517,13 +522,16 @@
         updateFilterCounts();
     }
 
-    // ===== MARKERS RENDER =====
     function renderMarkers() {
-        if (!markersLayer) return;
+        if (!markersLayer || !suggestionsLayer) return;
         markersLayer.clearLayers();
+        suggestionsLayer.clearLayers();
         leafletMarkers = {};
+        leafletSuggestions = {};
 
         const active = getActiveFilters();
+
+        // Обычные маркеры
         markers.filter(m => m.mapId === currentMapId && active.includes(m.category)).forEach(data => {
             const customIcon = L.divIcon({
                 html: `<div class="marker-icon-wrapper marker-cat-${data.category}">${getCategoryIconHtml(data.category)}</div>`,
@@ -531,18 +539,44 @@
             });
             const marker = L.marker([data.lat, data.lng], { icon: customIcon, title: data.name });
             marker.bindTooltip(data.name, { direction: 'top', offset: [0, -22] });
-            marker.on('click', (e) => { L.DomEvent.stopPropagation(e); openInfoPanel(data); });
+            marker.on('click', (e) => {
+                L.DomEvent.stopPropagation(e);
+                openInfoPanel(data, 'marker');
+            });
             marker.addTo(markersLayer);
             leafletMarkers[data.id] = marker;
         });
+
+        // Предложения (для авторизованных)
+        if (currentUser) {
+            suggestions.filter(s => s.map_id === currentMapId && active.includes(s.category)).forEach(data => {
+                const customIcon = L.divIcon({
+                    html: `<div class="marker-icon-wrapper marker-suggestion marker-cat-${data.category}">
+                        ${getCategoryIconHtml(data.category)}
+                        <div class="suggestion-badge">?</div>
+                    </div>`,
+                    className: 'custom-marker-icon suggestion-marker', iconSize: [34, 34], iconAnchor: [17, 17]
+                });
+                const marker = L.marker([data.lat, data.lng], { icon: customIcon, title: `[Предложение] ${data.name}` });
+                marker.bindTooltip(`💡 ${data.name}`, { direction: 'top', offset: [0, -22] });
+                marker.on('click', (e) => {
+                    L.DomEvent.stopPropagation(e);
+                    openInfoPanel(data, 'suggestion');
+                });
+                marker.addTo(suggestionsLayer);
+                leafletSuggestions[data.id] = marker;
+            });
+        }
+
         updateFilterCounts();
     }
 
     function updateFilterCounts() {
         Object.keys(ICON_CONFIG).forEach(cat => {
             const count = markers.filter(m => m.mapId === currentMapId && m.category === cat).length;
+            const sugCount = currentUser ? suggestions.filter(s => s.map_id === currentMapId && s.category === cat).length : 0;
             const el = $(`count-${cat}`);
-            if (el) el.textContent = count;
+            if (el) el.textContent = sugCount > 0 ? `${count}+${sugCount}` : count;
         });
     }
 
@@ -617,16 +651,26 @@
     }
 
     // ===== INFO PANEL =====
-    function openInfoPanel(data) {
+    function openInfoPanel(data, type = 'marker') {
         const iconCfg = ICON_CONFIG[data.category] || {};
-        const mapCfg = MAPS_CONFIG.find(m => m.id === data.mapId);
+        const mapId = type === 'suggestion' ? data.map_id : data.mapId;
+        const mapCfg = MAPS_CONFIG.find(m => m.id === mapId);
 
         $('info-title').textContent = data.name;
         $('info-category').innerHTML = `${getCategoryIconHtml(data.category)} ${iconCfg.label || ''}`;
         $('info-category').style.color = iconCfg.color || '';
         $('info-text').textContent = data.description || 'Нет описания';
         $('info-coords').textContent = `${data.lat.toFixed(0)}, ${data.lng.toFixed(0)}`;
-        $('info-map-name').textContent = mapCfg ? mapCfg.name : data.mapId;
+        $('info-map-name').textContent = mapCfg ? mapCfg.name : mapId;
+
+        const suggBadge = $('info-suggestion-badge');
+        if (type === 'suggestion') {
+            suggBadge.classList.remove('hidden');
+            const author = data.created_by?.username || '?';
+            suggBadge.innerHTML = `💡 <strong>ПРЕДЛОЖЕНИЕ</strong> от ${escapeHtml(author)}`;
+        } else {
+            suggBadge.classList.add('hidden');
+        }
 
         const img = $('info-image');
         const noImg = $('info-no-image');
@@ -635,17 +679,80 @@
             img.onerror = () => { img.style.display = 'none'; noImg.classList.remove('hidden'); };
         } else { img.style.display = 'none'; noImg.classList.remove('hidden'); }
 
-        $('info-actions').classList.toggle('hidden', currentUser?.role !== 'admin');
+        updateInfoActions(type);
+
         $('info-panel').dataset.markerId = data.id;
+        $('info-panel').dataset.type = type;
         $('info-panel').classList.remove('hidden');
         $('view-map-container').classList.add('info-open');
         setTimeout(() => { if (map) map.invalidateSize(); }, 350);
+    }
+
+    function updateInfoActions(type) {
+        const isAdmin = currentUser?.role === 'admin';
+        const markerActions = $('info-actions-marker');
+        const suggestionActions = $('info-actions-suggestion');
+        const shareBtn = $('btn-share-marker');
+
+        if (type === 'suggestion') {
+            markerActions.classList.add('hidden');
+            shareBtn.classList.add('hidden');
+            suggestionActions.classList.toggle('hidden', !isAdmin);
+        } else {
+            suggestionActions.classList.add('hidden');
+            shareBtn.classList.remove('hidden');
+            markerActions.classList.toggle('hidden', !isAdmin);
+        }
     }
 
     function closeInfoPanel() {
         $('info-panel').classList.add('hidden');
         $('view-map-container').classList.remove('info-open');
         setTimeout(() => { if (map) map.invalidateSize(); }, 350);
+    }
+
+    async function approveSuggestionFromPanel() {
+        const id = $('info-panel').dataset.markerId;
+        const suggestion = suggestions.find(s => s.id === id);
+        if (!suggestion) return;
+        if (!confirm(`Одобрить предложение "${suggestion.name}"?`)) return;
+
+        try {
+            await SupabaseDB.reviewSuggestion(suggestion.id, 'approved', '', currentUser.id);
+            const newMarker = {
+                id: 'sug_' + Date.now().toString(36),
+                mapId: suggestion.map_id,
+                name: suggestion.name,
+                category: suggestion.category,
+                lat: suggestion.lat,
+                lng: suggestion.lng,
+                description: suggestion.description || '',
+                screenshot: suggestion.screenshot || '',
+                userId: currentUser.id
+            };
+            await SupabaseDB.addMarker(newMarker);
+            markers.push(newMarker);
+            await loadSuggestions();
+            renderMarkers();
+            closeInfoPanel();
+            notify('✅ Предложение одобрено');
+        } catch (err) { notify('❌ Ошибка: ' + err.message); }
+    }
+
+    async function rejectSuggestionFromPanel() {
+        const id = $('info-panel').dataset.markerId;
+        const suggestion = suggestions.find(s => s.id === id);
+        if (!suggestion) return;
+        const comment = prompt('Причина отклонения (необязательно):', '');
+        if (comment === null) return;
+
+        try {
+            await SupabaseDB.reviewSuggestion(suggestion.id, 'rejected', comment || '', currentUser.id);
+            await loadSuggestions();
+            renderMarkers();
+            closeInfoPanel();
+            notify('❌ Предложение отклонено');
+        } catch (err) { notify('❌ Ошибка: ' + err.message); }
     }
 
     // ===== MAP CLICK =====
@@ -668,7 +775,6 @@
     function startAddingMarker(mode = 'add') {
         if (!currentUser) return;
         if (mode === 'add' && currentUser.role !== 'admin') return;
-        if (mode === 'suggest' && !currentUser) return;
 
         formMode = mode;
         isAddingMarker = true;
@@ -765,6 +871,7 @@
         try {
             if (mode === 'suggest') {
                 await SupabaseDB.addSuggestion(data);
+                await loadSuggestions();
                 notify('💡 Предложение отправлено!');
             } else if (mode === 'edit' && editingMarkerId) {
                 data.id = editingMarkerId;
@@ -793,34 +900,41 @@
         if (currentUser?.role !== 'admin') return;
         const id = $('info-panel').dataset.markerId;
         if (!confirm('Удалить эту точку?')) return;
-
         try {
             await SupabaseDB.deleteMarker(id);
             markers = markers.filter(m => m.id !== id);
             renderMarkers();
             closeInfoPanel();
             notify('🗑️ Точка удалена');
-        } catch (err) {
-            notify('❌ Ошибка: ' + err.message);
-        }
+        } catch (err) { notify('❌ Ошибка: ' + err.message); }
     }
 
-    // ===== NAV HELPERS =====
+    // ===== NAV =====
     function goToMarker(mapId, markerId) {
         switchView('map');
         if (currentMapId !== mapId) {
             switchMap(mapId);
-            setTimeout(() => highlightAndFocus(markerId), 800);
+            setTimeout(() => highlightAndFocusMarker(markerId), 800);
         } else {
-            setTimeout(() => highlightAndFocus(markerId), 200);
+            setTimeout(() => highlightAndFocusMarker(markerId), 200);
         }
     }
 
-    function highlightAndFocus(markerId) {
+    function goToSuggestion(mapId, suggestionId) {
+        switchView('map');
+        if (currentMapId !== mapId) {
+            switchMap(mapId);
+            setTimeout(() => highlightAndFocusSuggestion(suggestionId), 800);
+        } else {
+            setTimeout(() => highlightAndFocusSuggestion(suggestionId), 200);
+        }
+    }
+
+    function highlightAndFocusMarker(markerId) {
         const data = markers.find(m => m.id === markerId);
         if (!data || !map) return;
         map.setView([data.lat, data.lng], Math.max(map.getZoom(), 1), { animate: true });
-        setTimeout(() => openInfoPanel(data), 300);
+        setTimeout(() => openInfoPanel(data, 'marker'), 300);
         const lm = leafletMarkers[markerId];
         if (lm) {
             const el = lm.getElement();
@@ -828,17 +942,25 @@
         }
     }
 
-    // ===== SHARE LINK =====
+    function highlightAndFocusSuggestion(suggestionId) {
+        const data = suggestions.find(s => s.id === suggestionId);
+        if (!data || !map) return;
+        map.setView([data.lat, data.lng], Math.max(map.getZoom(), 1), { animate: true });
+        setTimeout(() => openInfoPanel(data, 'suggestion'), 300);
+        const lm = leafletSuggestions[suggestionId];
+        if (lm) {
+            const el = lm.getElement();
+            if (el) { el.classList.add('marker-highlighted'); setTimeout(() => el.classList.remove('marker-highlighted'), 4000); }
+        }
+    }
+
     function shareMarker() {
         const id = $('info-panel').dataset.markerId;
         const data = markers.find(m => m.id === id);
         if (!data) return;
         const url = generateShareUrl(data);
-        navigator.clipboard.writeText(url).then(() => {
-            notify('🔗 Ссылка скопирована!');
-        }).catch(() => {
-            prompt('Скопируйте ссылку:', url);
-        });
+        navigator.clipboard.writeText(url).then(() => notify('🔗 Ссылка скопирована!'))
+            .catch(() => prompt('Скопируйте ссылку:', url));
     }
 
     // ===== HELPERS =====
@@ -864,7 +986,6 @@
         $('view-suggestions').addEventListener('click', () => switchView('suggestions'));
         $('catalog-search').addEventListener('input', (e) => renderCatalog(e.target.value));
 
-        // Suggestion tabs
         document.querySelectorAll('.suggestion-tab').forEach(tab => {
             tab.addEventListener('click', () => {
                 document.querySelectorAll('.suggestion-tab').forEach(t => t.classList.remove('active'));
@@ -878,8 +999,9 @@
         $('btn-edit-marker').addEventListener('click', startEditingMarker);
         $('btn-delete-marker').addEventListener('click', deleteMarker);
         $('btn-share-marker').addEventListener('click', shareMarker);
+        $('btn-approve-panel').addEventListener('click', approveSuggestionFromPanel);
+        $('btn-reject-panel').addEventListener('click', rejectSuggestionFromPanel);
 
-        // Auth
         $('btn-login-toggle').addEventListener('click', () => {
             $('login-modal').classList.remove('hidden');
             $('login-username').value = '';
@@ -891,14 +1013,12 @@
         $('btn-close-login').addEventListener('click', () => $('login-modal').classList.add('hidden'));
         $('btn-logout').addEventListener('click', handleLogout);
 
-        // Add / Suggest
         $('btn-add-marker').addEventListener('click', () => startAddingMarker('add'));
         $('btn-suggest-marker').addEventListener('click', () => startAddingMarker('suggest'));
         $('marker-form').addEventListener('submit', saveMarker);
         $('btn-cancel-form').addEventListener('click', stopAddingMarker);
         $('btn-close-form').addEventListener('click', stopAddingMarker);
 
-        // Category dropdown
         $('form-category-btn').addEventListener('click', (e) => {
             e.stopPropagation();
             $('form-category-dropdown').classList.toggle('hidden');
@@ -911,12 +1031,10 @@
             }
         });
 
-        // Review modal
         $('btn-close-review').addEventListener('click', () => $('review-modal').classList.add('hidden'));
         $('btn-approve-suggestion').addEventListener('click', () => handleReview(true));
         $('btn-reject-suggestion').addEventListener('click', () => handleReview(false));
 
-        // Modal overlays
         document.querySelectorAll('.modal-overlay').forEach(o => {
             o.addEventListener('click', () => {
                 $('login-modal').classList.add('hidden');
@@ -924,7 +1042,6 @@
             });
         });
 
-        // ESC
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 if (isAddingMarker) stopAddingMarker();
