@@ -1,6 +1,5 @@
 /**
  * Supabase клиент
- * ЗАМЕНИ URL и KEY на свои из настроек Supabase
  */
 const SUPABASE_URL = 'https://fiugssqfnenuzcpqvpoj.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_UzEXWvBbFgOKzVs_x1oK6A_qkSlV1Qp';
@@ -151,53 +150,33 @@ const SupabaseDB = {
     },
 
     // ===== ЗАГРУЗКА СКРИНШОТОВ =====
-async uploadScreenshot(file) {
-    const ext = file.type.split('/')[1] || 'png';
-    const fileName = `${Date.now()}_${Math.random().toString(36).substr(2, 8)}.${ext}`;
+    async uploadScreenshot(file) {
+        const ext = file.type.split('/')[1] || 'png';
+        const fileName = `${Date.now()}_${Math.random().toString(36).substr(2, 8)}.${ext}`;
 
-    try {
-        const res = await fetch(`${SUPABASE_URL}/storage/v1/object/screenshots/${fileName}`, {
-            method: 'POST',
-            headers: {
-                'apikey': SUPABASE_ANON_KEY,
-                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-                'Content-Type': file.type,
-                'x-upsert': 'true'
-            },
-            body: file
-        });
+        try {
+            const res = await fetch(`${SUPABASE_URL}/storage/v1/object/screenshots/${fileName}`, {
+                method: 'POST',
+                headers: {
+                    'apikey': SUPABASE_ANON_KEY,
+                    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                    'Content-Type': file.type,
+                    'x-upsert': 'true'
+                },
+                body: file
+            });
 
-        if (!res.ok) {
-            const errText = await res.text();
-            console.error('Storage error:', errText);
+            if (!res.ok) {
+                const errText = await res.text();
+                console.error('Storage error:', errText);
+                return await this.fileToDataUrl(file);
+            }
+
+            return `${SUPABASE_URL}/storage/v1/object/public/screenshots/${fileName}`;
+        } catch (e) {
+            console.error('Upload failed:', e);
             return await this.fileToDataUrl(file);
         }
-
-        // Публичный URL для просмотра
-        return `${SUPABASE_URL}/storage/v1/object/public/screenshots/${fileName}`;
-    } catch (e) {
-        console.error('Upload failed:', e);
-        return await this.fileToDataUrl(file);
-    }
-}
-        const fileName = `screenshots/${Date.now()}_${Math.random().toString(36).substr(2, 8)}.${file.type.split('/')[1] || 'png'}`;
-
-        const res = await fetch(`${SUPABASE_URL}/storage/v1/object/public/${fileName}`, {
-            method: 'POST',
-            headers: {
-                'apikey': SUPABASE_ANON_KEY,
-                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-                'Content-Type': file.type
-            },
-            body: file
-        });
-
-        if (!res.ok) {
-            // Fallback: конвертируем в base64 data URL
-            return await this.fileToDataUrl(file);
-        }
-
-        return `${SUPABASE_URL}/storage/v1/object/public/${fileName}`;
     },
 
     fileToDataUrl(file) {
