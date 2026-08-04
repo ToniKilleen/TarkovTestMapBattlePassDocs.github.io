@@ -78,6 +78,22 @@ const MAPS_CONFIG = [
         defaultZoom: -1,
         minZoom: -3,
         maxZoom: 4
+    },
+    {
+        id: 'icebreaker',
+        name: 'Терминал',
+        image: 'images/maps/icebreaker.jpg',
+        defaultZoom: -1,
+        minZoom: -3,
+        maxZoom: 4
+    },
+    {
+        id: 'labyrinth',
+        name: 'Лабиринт',
+        image: 'images/maps/labyrinth-2d.jpg',
+        defaultZoom: -2,
+        minZoom: -3,
+        maxZoom: 4
     }
 ];
 

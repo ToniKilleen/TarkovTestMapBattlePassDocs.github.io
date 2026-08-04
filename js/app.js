@@ -35,10 +35,48 @@
             setupEventListeners();
             setupScreenshotPaste();
             setupVisibilityDetection();
+            initVersionSystem();
             switchMap(MAPS_CONFIG[0].id);
             restoreSession();
             setTimeout(handleUrlParams, 500);
         });
+    }
+
+    // ===== VERSION SYSTEM =====
+    function initVersionSystem() {
+        if (typeof CURRENT_VERSION !== 'undefined') {
+            const vNum = $('version-number');
+            if (vNum) vNum.textContent = CURRENT_VERSION;
+        }
+        renderVersionChangelog();
+    }
+
+    function renderVersionChangelog() {
+        const body = $('version-body');
+        if (!body || typeof CHANGELOG === 'undefined') return;
+        if (!CHANGELOG || CHANGELOG.length === 0) {
+            body.innerHTML = '<div class="catalog-empty">История версий пуста</div>';
+            return;
+        }
+        body.innerHTML = CHANGELOG.map((entry, idx) => {
+            const isCurrent = idx === 0 && entry.version === (typeof CURRENT_VERSION !== 'undefined' ? CURRENT_VERSION : '');
+            return `<div class="version-entry ${isCurrent ? 'version-entry-current' : ''}">
+                <div class="version-entry-header">
+                    <span class="version-entry-badge">v${escapeHtml(entry.version)}</span>
+                    ${isCurrent ? '<span class="version-entry-current-label">Текущая</span>' : ''}
+                    <span class="version-entry-title">${escapeHtml(entry.title || '')}</span>
+                    <span class="version-entry-date">${escapeHtml(entry.date || '')}</span>
+                </div>
+                <ul class="version-entry-changes">
+                    ${(entry.changes || []).map(c => `<li>${escapeHtml(c)}</li>`).join('')}
+                </ul>
+            </div>`;
+        }).join('');
+    }
+
+    function openVersionModal() {
+        renderVersionChangelog();
+        $('version-modal').classList.remove('hidden');
     }
 
     // ===== ОТСЛЕЖИВАНИЕ ВИДИМОСТИ ВКЛАДКИ =====
@@ -1166,10 +1204,14 @@
         $('btn-approve-suggestion').addEventListener('click', () => handleReview(true));
         $('btn-reject-suggestion').addEventListener('click', () => handleReview(false));
 
+        $('btn-close-version').addEventListener('click', () => $('version-modal').classList.add('hidden'));
+        $('version-badge').addEventListener('click', () => openVersionModal());
+
         document.querySelectorAll('.modal-overlay').forEach(o => {
             o.addEventListener('click', () => {
                 $('login-modal').classList.add('hidden');
                 $('review-modal').classList.add('hidden');
+                $('version-modal').classList.add('hidden');
             });
         });
 
