@@ -1,8 +1,3 @@
-/**
- * Tarkov Interactive Maps — Main Application
- * Uses Leaflet.js for map rendering with image overlay
- */
-
 (function () {
     'use strict';
 
@@ -10,35 +5,26 @@
     let map = null;
     let imageOverlay = null;
     let currentMapId = null;
-    let currentFloor = null;
     let markersLayer = null;
     let markers = [];
     let isAddingMarker = false;
     let editingMarkerId = null;
-    let pendingLatLng = null;
 
     // ===== DOM REFS =====
-    const $mapContainer = document.getElementById('map');
     const $mapSelector = document.getElementById('map-selector');
-    const $floorSelector = document.getElementById('floor-selector');
     const $infoPanel = document.getElementById('info-panel');
-    const $filterPanel = document.getElementById('filter-panel');
     const $markerModal = document.getElementById('marker-modal');
 
-    // Info panel elements
     const $infoTitle = document.getElementById('info-title');
     const $infoCategory = document.getElementById('info-category');
     const $infoImage = document.getElementById('info-image');
     const $infoText = document.getElementById('info-text');
     const $infoCoords = document.getElementById('info-coords');
-    const $infoFloor = document.getElementById('info-floor');
 
-    // Form elements
     const $formName = document.getElementById('form-name');
     const $formCategory = document.getElementById('form-category');
     const $formDescription = document.getElementById('form-description');
     const $formScreenshot = document.getElementById('form-screenshot');
-    const $formFloor = document.getElementById('form-floor');
     const $formLat = document.getElementById('form-lat');
     const $formLng = document.getElementById('form-lng');
     const $formId = document.getElementById('form-id');
@@ -67,7 +53,7 @@
         localStorage.setItem('tarkov_markers', JSON.stringify(markers));
     }
 
-    // ===== RENDER MAP TABS =====
+    // ===== MAP TABS =====
     function renderMapTabs() {
         $mapSelector.innerHTML = '';
         MAPS_CONFIG.forEach(cfg => {
@@ -87,74 +73,73 @@
 
         currentMapId = mapId;
 
-        // Update tab active state
         document.querySelectorAll('.map-tab').forEach(tab => {
             tab.classList.toggle('active', tab.dataset.mapId === mapId);
         });
 
-        // Setup floors
-        renderFloorButtons(config);
-
-        // Determine which floor/image to show
-        let imageUrl = config.image;
-        if (config.floors && config.floors.length > 0) {
-            currentFloor = config.floors[0].id;
-            imageUrl = config.floors[0].image;
-        } else {
-            currentFloor = 'default';
-        }
-
-        // Initialize or reset Leaflet map
-        initLeafletMap(config, imageUrl);
-
-        // Render markers
-        renderMarkers();
+        loadImageAndInitMap(config);
     }
 
-    // ===== FLOOR BUTTONS =====
-    function renderFloorButtons(config) {
-        $floorSelector.innerHTML = '';
-        if (!config.floors) return;
+    // ===== AUTO-DETECT IMAGE SIZE & INIT =====
+    function loadImageAndInitMap(config) {
+        const mapDiv = document.getElementById('map');
+        mapDiv.style.opacity = '0.5';
 
-        config.floors.forEach((floor, index) => {
-            const btn = document.createElement('button');
-            btn.className = 'floor-btn' + (index === 0 ? ' active' : '');
-            btn.textContent = floor.name;
-            btn.dataset.floorId = floor.id;
-            btn.addEventListener('click', () => switchFloor(config, floor));
-            $floorSelector.appendChild(btn);
-        });
-    }
+        const img = new Image();
 
-    function switchFloor(config, floor) {
-        currentFloor = floor.id;
+        img.onload = function () {
+            const bounds = [this.height, this.width];
+            console.log(`[${config.id}] Загружено: ${this.width}x${this.height}`);
+            initLeafletMap(config, config.image, bounds);
+            mapDiv.style.opacity = '1';
+        };
 
-        // Update button states
-        document.querySelectorAll('.floor-btn').forEach(btn => {
-            btn.classList.toggle('active', btn.dataset.floorId === floor.id);
-        });
+        img.onerror = function () {
+            console.error(`[${config.id}] НЕ НАЙДЕН: ${config.image}`);
+            mapDiv.style.opacity = '1';
+            if (map) {
+                map.remove();
+                map = null;
+            }
+            mapDiv.innerHTML = `
+                <div style="
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    height: 100%;
+                    color: #e74c3c;
+                    font-family: 'Share Tech Mono', monospace;
+                    text-align: center;
+                    padding: 40px;
+                ">
+                    <p style="font-size: 48px; margin-bottom: 20px;">⚠️</p>
+                    <h2 style="margin-bottom: 10px;">Изображение не найдено</h2>
+                    <p style="color: #888; margin-bottom: 20px;">Файл: <code style="color: #c8aa58;">${config.image}</code></p>
+                    <p style="color: #888; font-size: 14px; max-width: 400px;">
+                        Убедитесь что файл существует по указанному пути.<br>
+                        Проверьте расширение (.jpg / .png / .webp).<br>
+                        Откройте консоль (F12) для деталей.
+                    </p>
+                </div>
+            `;
+        };
 
-        // Update image overlay
-        const bounds = [[0, 0], [-config.bounds[0], config.bounds[1]]];
-        if (imageOverlay) {
-            map.removeLayer(imageOverlay);
-        }
-        imageOverlay = L.imageOverlay(floor.image, bounds).addTo(map);
-
-        // Re-render markers for this floor
-        renderMarkers();
+        img.src = config.image;
     }
 
     // ===== LEAFLET MAP INIT =====
-    function initLeafletMap(config, imageUrl) {
-        // Destroy existing map
+    function initLeafletMap(config, imageUrl, imageBounds) {
         if (map) {
             map.remove();
             map = null;
         }
 
-        const h = config.bounds[0];
-        const w = config.bounds[1];
+        const mapDiv = document.getElementById('map');
+        mapDiv.innerHTML = '';
+
+        const h = imageBounds[0];
+        const w = imageBounds[1];
         const bounds = [[0, 0], [-h, w]];
 
         map = L.map('map', {
@@ -163,24 +148,22 @@
             maxZoom: config.maxZoom,
             zoomSnap: 0.5,
             zoomDelta: 0.5,
-            attributionControl: false
+            attributionControl: false,
+            maxBounds: bounds,
+            maxBoundsViscosity: 0.8
         });
 
         imageOverlay = L.imageOverlay(imageUrl, bounds).addTo(map);
         map.fitBounds(bounds);
-        map.setZoom(config.defaultZoom);
 
-        // Markers layer
+        setTimeout(() => {
+            map.setZoom(config.defaultZoom);
+        }, 100);
+
         markersLayer = L.layerGroup().addTo(map);
-
-        // Click on map — for adding markers
         map.on('click', onMapClick);
 
-        // Show coordinates on mouse move (for debugging)
-        map.on('mousemove', (e) => {
-            // Optional: display coords in header or console
-            // console.log(`Lat: ${e.latlng.lat.toFixed(0)}, Lng: ${e.latlng.lng.toFixed(0)}`);
-        });
+        renderMarkers();
     }
 
     // ===== RENDER MARKERS =====
@@ -188,25 +171,17 @@
         if (!markersLayer) return;
         markersLayer.clearLayers();
 
-        // Get active filters
         const activeCategories = getActiveFilters();
 
-        // Filter markers for current map and floor
         const filtered = markers.filter(m => {
             if (m.mapId !== currentMapId) return false;
             if (!activeCategories.includes(m.category)) return false;
-
-            // Floor filtering
-            if (currentFloor !== 'default' && m.floor && m.floor !== 'default') {
-                return m.floor === currentFloor;
-            }
             return true;
         });
 
         filtered.forEach(markerData => {
             const iconCfg = ICON_CONFIG[markerData.category] || ICON_CONFIG.loot;
 
-            // Create custom HTML icon
             const iconHtml = `
                 <div class="marker-icon-wrapper marker-cat-${markerData.category}">
                     <span style="font-size: 16px;">${iconCfg.emoji}</span>
@@ -225,15 +200,12 @@
                 title: markerData.name
             });
 
-            // Tooltip on hover
             leafletMarker.bindTooltip(markerData.name, {
                 direction: 'top',
                 offset: [0, -20]
             });
 
-            // Click — open info panel
             leafletMarker.on('click', () => openInfoPanel(markerData));
-
             leafletMarker.addTo(markersLayer);
         });
     }
@@ -257,23 +229,16 @@
         $infoCategory.style.borderLeft = `3px solid ${iconCfg.color}`;
         $infoText.textContent = markerData.description || 'Нет описания';
         $infoCoords.textContent = `${markerData.lat.toFixed(0)}, ${markerData.lng.toFixed(0)}`;
-        $infoFloor.textContent = markerData.floor || 'По умолчанию';
 
-        // Screenshot
         if (markerData.screenshot) {
             $infoImage.src = markerData.screenshot;
             $infoImage.style.display = 'block';
-            $infoImage.onerror = () => {
-                $infoImage.style.display = 'none';
-            };
+            $infoImage.onerror = () => { $infoImage.style.display = 'none'; };
         } else {
             $infoImage.style.display = 'none';
         }
 
-        // Store current marker ID for edit/delete
         $infoPanel.dataset.markerId = markerData.id;
-
-        // Show panel
         $infoPanel.classList.remove('hidden');
     }
 
@@ -281,48 +246,35 @@
         $infoPanel.classList.add('hidden');
     }
 
-    // ===== MAP CLICK (for adding markers) =====
+    // ===== MAP CLICK =====
     function onMapClick(e) {
         if (!isAddingMarker) return;
 
-        pendingLatLng = e.latlng;
         $formLat.value = e.latlng.lat.toFixed(2);
         $formLng.value = e.latlng.lng.toFixed(2);
-        $formCoordsHint.textContent = `Координаты: ${e.latlng.lat.toFixed(0)}, ${e.latlng.lng.toFixed(0)} ✓`;
+        $formCoordsHint.textContent = `✅ Координаты: ${e.latlng.lat.toFixed(0)}, ${e.latlng.lng.toFixed(0)}`;
         $formCoordsHint.style.color = '#2ecc71';
 
-        // Show a temporary marker
-        if (window._tempMarker) {
-            map.removeLayer(window._tempMarker);
-        }
+        if (window._tempMarker) map.removeLayer(window._tempMarker);
         window._tempMarker = L.circleMarker(e.latlng, {
-            radius: 8,
+            radius: 10,
             color: '#c8aa58',
             fillColor: '#c8aa58',
-            fillOpacity: 0.5
+            fillOpacity: 0.6,
+            weight: 2
         }).addTo(map);
     }
 
-    // ===== ADD MARKER =====
+    // ===== ADD / EDIT / DELETE =====
     function startAddingMarker() {
         isAddingMarker = true;
         editingMarkerId = null;
-        pendingLatLng = null;
-
-        // Reset form
         document.getElementById('marker-form').reset();
         $formId.value = '';
         $formCoordsHint.textContent = '📍 Нажмите на карту, чтобы выбрать позицию';
         $formCoordsHint.style.color = '';
         document.getElementById('modal-title').textContent = 'Добавить точку';
-
-        // Set current floor
-        $formFloor.value = currentFloor;
-
-        // Show modal
         $markerModal.classList.remove('hidden');
-
-        // Change cursor
         document.getElementById('map').style.cursor = 'crosshair';
     }
 
@@ -330,14 +282,12 @@
         isAddingMarker = false;
         $markerModal.classList.add('hidden');
         document.getElementById('map').style.cursor = '';
-
         if (window._tempMarker) {
             map.removeLayer(window._tempMarker);
             window._tempMarker = null;
         }
     }
 
-    // ===== EDIT MARKER =====
     function startEditingMarker() {
         const markerId = $infoPanel.dataset.markerId;
         const markerData = markers.find(m => m.id === markerId);
@@ -346,13 +296,11 @@
         isAddingMarker = true;
         editingMarkerId = markerId;
 
-        // Fill form
         $formId.value = markerData.id;
         $formName.value = markerData.name;
         $formCategory.value = markerData.category;
         $formDescription.value = markerData.description || '';
         $formScreenshot.value = markerData.screenshot || '';
-        $formFloor.value = markerData.floor || 'default';
         $formLat.value = markerData.lat;
         $formLng.value = markerData.lng;
         $formCoordsHint.textContent = `Координаты: ${markerData.lat.toFixed(0)}, ${markerData.lng.toFixed(0)} (нажмите на карту для изменения)`;
@@ -362,7 +310,6 @@
         document.getElementById('map').style.cursor = 'crosshair';
     }
 
-    // ===== SAVE MARKER =====
     function saveMarker(e) {
         e.preventDefault();
 
@@ -381,19 +328,14 @@
             category: $formCategory.value,
             lat: lat,
             lng: lng,
-            floor: $formFloor.value,
             description: $formDescription.value.trim(),
             screenshot: $formScreenshot.value.trim()
         };
 
         if (editingMarkerId) {
-            // Update existing
             const index = markers.findIndex(m => m.id === editingMarkerId);
-            if (index !== -1) {
-                markers[index] = markerData;
-            }
+            if (index !== -1) markers[index] = markerData;
         } else {
-            // Add new
             markers.push(markerData);
         }
 
@@ -403,11 +345,9 @@
         closeInfoPanel();
     }
 
-    // ===== DELETE MARKER =====
     function deleteMarker() {
         const markerId = $infoPanel.dataset.markerId;
         if (!confirm('Удалить эту точку?')) return;
-
         markers = markers.filter(m => m.id !== markerId);
         saveMarkers();
         renderMarkers();
@@ -421,7 +361,7 @@
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `tarkov_markers_${currentMapId}_${Date.now()}.json`;
+        a.download = `tarkov_markers_${Date.now()}.json`;
         a.click();
         URL.revokeObjectURL(url);
     }
@@ -429,13 +369,11 @@
     function importMarkers(e) {
         const file = e.target.files[0];
         if (!file) return;
-
         const reader = new FileReader();
         reader.onload = (evt) => {
             try {
                 const imported = JSON.parse(evt.target.result);
                 if (Array.isArray(imported)) {
-                    // Merge (avoid duplicates by ID)
                     const existingIds = new Set(markers.map(m => m.id));
                     let added = 0;
                     imported.forEach(m => {
@@ -446,15 +384,13 @@
                     });
                     saveMarkers();
                     renderMarkers();
-                    alert(`Импортировано ${added} новых точек (${imported.length - added} дубликатов пропущено)`);
+                    alert(`Импортировано: ${added} новых точек`);
                 }
             } catch (err) {
-                alert('Ошибка чтения файла: ' + err.message);
+                alert('Ошибка: ' + err.message);
             }
         };
         reader.readAsText(file);
-
-        // Reset input
         e.target.value = '';
     }
 
@@ -465,45 +401,31 @@
 
     // ===== EVENT LISTENERS =====
     function setupEventListeners() {
-        // Filters
         document.querySelectorAll('.filter-group input[type="checkbox"]').forEach(cb => {
             cb.addEventListener('change', renderMarkers);
         });
 
-        // Info panel
         document.getElementById('close-info').addEventListener('click', closeInfoPanel);
         document.getElementById('btn-edit-marker').addEventListener('click', startEditingMarker);
         document.getElementById('btn-delete-marker').addEventListener('click', deleteMarker);
-
-        // Add marker
         document.getElementById('btn-add-marker').addEventListener('click', startAddingMarker);
-
-        // Modal
         document.getElementById('marker-form').addEventListener('submit', saveMarker);
         document.getElementById('btn-cancel-modal').addEventListener('click', stopAddingMarker);
-
-        // Export / Import
         document.getElementById('btn-export').addEventListener('click', exportMarkers);
         document.getElementById('btn-import').addEventListener('click', () => {
             document.getElementById('import-file').click();
         });
         document.getElementById('import-file').addEventListener('change', importMarkers);
 
-        // Close modal on ESC
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
-                if (!$markerModal.classList.contains('hidden')) {
-                    stopAddingMarker();
-                }
+                if (!$markerModal.classList.contains('hidden')) stopAddingMarker();
                 closeInfoPanel();
             }
         });
 
-        // Click on screenshot to open full size
         $infoImage.addEventListener('click', () => {
-            if ($infoImage.src) {
-                window.open($infoImage.src, '_blank');
-            }
+            if ($infoImage.src) window.open($infoImage.src, '_blank');
         });
     }
 
