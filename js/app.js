@@ -156,8 +156,9 @@
     // ===== LOADING =====
     async function loadMarkers() {
         const dbMarkers = await SupabaseDB.getMarkers();
-        if (dbMarkers && dbMarkers.length > 0) markers = dbMarkers;
-        else markers = JSON.parse(JSON.stringify(DEFAULT_MARKERS));
+        // ВАЖНО: используем только точки из базы, без fallback
+        markers = dbMarkers || [];
+        console.log(`Загружено маркеров из БД: ${markers.length}`);
     }
 
     async function loadSuggestions() {
@@ -165,10 +166,8 @@
         try {
             const all = await SupabaseDB.getSuggestions('pending');
             if (currentUser.role === 'admin') {
-                // Админ видит все
                 suggestions = all;
             } else {
-                // Оператор видит только свои — фильтруем по user ID
                 suggestions = all.filter(s => s.created_by === currentUser.id);
             }
             console.log(`Загружено предложений: ${suggestions.length} (роль: ${currentUser.role})`);
@@ -264,7 +263,6 @@
         try {
             let sugs = await SupabaseDB.getSuggestions(status);
 
-            // Оператор видит только свои
             if (currentUser?.role === 'operator') {
                 sugs = sugs.filter(s => s.created_by === currentUser.id);
             }
@@ -536,7 +534,6 @@
 
         const active = getActiveFilters();
 
-        // Обычные маркеры
         markers.filter(m => m.mapId === currentMapId && active.includes(m.category)).forEach(data => {
             const customIcon = L.divIcon({
                 html: `<div class="marker-icon-wrapper marker-cat-${data.category}">${getCategoryIconHtml(data.category)}</div>`,
@@ -552,7 +549,6 @@
             leafletMarkers[data.id] = marker;
         });
 
-        // Предложения (для авторизованных)
         if (currentUser) {
             suggestions.filter(s => s.map_id === currentMapId && active.includes(s.category)).forEach(data => {
                 const customIcon = L.divIcon({

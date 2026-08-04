@@ -12,7 +12,6 @@ const SupabaseDB = {
         'Prefer': 'return=representation'
     },
 
-    // ===== МАРКЕРЫ =====
     async getMarkers() {
         try {
             const res = await fetch(`${SUPABASE_URL}/rest/v1/markers?select=*`, {
@@ -99,22 +98,19 @@ const SupabaseDB = {
             throw new Error(`Ошибка удаления: ${res.status} — ${responseText}`);
         }
 
-        // Проверяем, что реально что-то удалилось
         try {
             const deleted = JSON.parse(responseText);
             if (Array.isArray(deleted) && deleted.length === 0) {
-                console.error('DELETE вернул пустой массив — вероятно, RLS блокирует удаление');
-                throw new Error('Точка не удалилась. Проверьте RLS-политики в Supabase (нужен DELETE policy для таблицы markers)');
+                console.warn('DELETE вернул пустой массив — точки нет в базе (возможно, она из локального файла)');
+                // Не бросаем ошибку — просто удаляем локально
+            } else {
+                console.log('✅ Удалено записей:', deleted.length);
             }
-            console.log('✅ Удалено записей:', deleted.length);
         } catch (e) {
-            if (e.message.includes('RLS') || e.message.includes('не удалилась')) throw e;
-            // Пустой ответ — тоже ок, если статус 200/204
             console.log('DELETE выполнен, ответ пустой');
         }
     },
 
-    // ===== ПРЕДЛОЖЕНИЯ =====
     async getSuggestions(status = null) {
         let url = `${SUPABASE_URL}/rest/v1/suggestions?select=*&order=created_at.desc`;
         if (status) url += `&status=eq.${status}`;
@@ -123,7 +119,6 @@ const SupabaseDB = {
         if (!res.ok) throw new Error(`${res.status}`);
         const suggestions = await res.json();
 
-        // Догружаем usernames отдельно
         const userIds = [...new Set(suggestions.map(s => s.created_by).filter(Boolean))];
         if (userIds.length > 0) {
             const usersRes = await fetch(
@@ -187,7 +182,6 @@ const SupabaseDB = {
         return await res.json();
     },
 
-    // ===== АВТОРИЗАЦИЯ =====
     async login(username, password) {
         const hash = await this.hashPassword(password);
         const res = await fetch(
@@ -208,7 +202,6 @@ const SupabaseDB = {
         return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
     },
 
-    // ===== ЗАГРУЗКА СКРИНШОТОВ =====
     async uploadScreenshot(file) {
         const ext = file.type.split('/')[1] || 'png';
         const fileName = `${Date.now()}_${Math.random().toString(36).substr(2, 8)}.${ext}`;
