@@ -52,12 +52,16 @@ const SupabaseDB = {
                 created_by: marker.userId || null
             })
         });
-        if (!res.ok) throw new Error(`Ошибка добавления: ${res.status}`);
+        if (!res.ok) {
+            const errText = await res.text();
+            console.error('ADD failed:', res.status, errText);
+            throw new Error(`Ошибка добавления: ${res.status} — ${errText}`);
+        }
         return await res.json();
     },
 
     async updateMarker(marker) {
-        const res = await fetch(`${SUPABASE_URL}/rest/v1/markers?id=eq.${marker.id}`, {
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/markers?id=eq.${encodeURIComponent(marker.id)}`, {
             method: 'PATCH',
             headers: this.headers,
             body: JSON.stringify({
@@ -71,22 +75,47 @@ const SupabaseDB = {
                 updated_at: new Date().toISOString()
             })
         });
-        if (!res.ok) throw new Error(`Ошибка обновления: ${res.status}`);
+        if (!res.ok) {
+            const errText = await res.text();
+            console.error('UPDATE failed:', res.status, errText);
+            throw new Error(`Ошибка обновления: ${res.status} — ${errText}`);
+        }
         return await res.json();
     },
 
     async deleteMarker(id) {
-        const res = await fetch(`${SUPABASE_URL}/rest/v1/markers?id=eq.${id}`, {
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/markers?id=eq.${encodeURIComponent(id)}`, {
             method: 'DELETE',
-            headers: this.headers
+            headers: {
+                ...this.headers,
+                'Prefer': 'return=representation'
+            }
         });
-        if (!res.ok) throw new Error(`Ошибка удаления: ${res.status}`);
+
+        const responseText = await res.text();
+
+        if (!res.ok) {
+            console.error('DELETE failed:', res.status, responseText);
+            throw new Error(`Ошибка удаления: ${res.status} — ${responseText}`);
+        }
+
+        // Проверяем, что реально что-то удалилось
+        try {
+            const deleted = JSON.parse(responseText);
+            if (Array.isArray(deleted) && deleted.length === 0) {
+                console.error('DELETE вернул пустой массив — вероятно, RLS блокирует удаление');
+                throw new Error('Точка не удалилась. Проверьте RLS-политики в Supabase (нужен DELETE policy для таблицы markers)');
+            }
+            console.log('✅ Удалено записей:', deleted.length);
+        } catch (e) {
+            if (e.message.includes('RLS') || e.message.includes('не удалилась')) throw e;
+            // Пустой ответ — тоже ок, если статус 200/204
+            console.log('DELETE выполнен, ответ пустой');
+        }
     },
 
     // ===== ПРЕДЛОЖЕНИЯ =====
-    // Возвращает предложения + username автора отдельным полем
     async getSuggestions(status = null) {
-        // Простой запрос без FK-джойна (стабильнее)
         let url = `${SUPABASE_URL}/rest/v1/suggestions?select=*&order=created_at.desc`;
         if (status) url += `&status=eq.${status}`;
 
@@ -106,7 +135,6 @@ const SupabaseDB = {
                 const userMap = {};
                 users.forEach(u => { userMap[u.id] = u.username; });
 
-                // Добавляем username к каждому предложению
                 suggestions.forEach(s => {
                     s.author_username = userMap[s.created_by] || '?';
                 });
@@ -132,7 +160,11 @@ const SupabaseDB = {
                 status: 'pending'
             })
         });
-        if (!res.ok) throw new Error(`${res.status}`);
+        if (!res.ok) {
+            const errText = await res.text();
+            console.error('ADD suggestion failed:', res.status, errText);
+            throw new Error(`Ошибка: ${res.status} — ${errText}`);
+        }
         return await res.json();
     },
 
@@ -147,7 +179,11 @@ const SupabaseDB = {
                 reviewed_by: adminId
             })
         });
-        if (!res.ok) throw new Error(`${res.status}`);
+        if (!res.ok) {
+            const errText = await res.text();
+            console.error('REVIEW failed:', res.status, errText);
+            throw new Error(`Ошибка: ${res.status} — ${errText}`);
+        }
         return await res.json();
     },
 
