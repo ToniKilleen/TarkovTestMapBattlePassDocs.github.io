@@ -344,16 +344,46 @@
         currentView = view;
         $('view-map').classList.toggle('active', view === 'map');
         $('view-catalog').classList.toggle('active', view === 'catalog');
+        $('view-changelog').classList.toggle('active', view === 'changelog');
         $('view-suggestions').classList.toggle('active', view === 'suggestions');
 
         $('view-map-container').classList.toggle('hidden', view !== 'map');
         $('view-catalog-container').classList.toggle('hidden', view !== 'catalog');
+        $('view-changelog-container').classList.toggle('hidden', view !== 'changelog');
         $('view-suggestions-container').classList.toggle('hidden', view !== 'suggestions');
         $('map-selector').classList.toggle('hidden', view !== 'map');
 
         if (view === 'catalog') renderCatalog();
         else if (view === 'suggestions') renderSuggestions();
+        else if (view === 'changelog') renderChangelogView();
         else if (view === 'map' && map) setTimeout(() => map.invalidateSize(), 100);
+    }
+
+    function renderChangelogView() {
+        const list = $('changelog-list');
+        const verEl = $('changelog-current-version');
+        if (verEl && typeof CURRENT_VERSION !== 'undefined') verEl.textContent = CURRENT_VERSION;
+        if (!list || typeof CHANGELOG === 'undefined') return;
+        if (!CHANGELOG || CHANGELOG.length === 0) {
+            list.innerHTML = '<div class="catalog-empty">Пока нет обновлений</div>';
+            return;
+        }
+        list.innerHTML = CHANGELOG.map((entry, idx) => {
+            const isCurrent = idx === 0;
+            return `<div class="changelog-entry ${isCurrent ? 'changelog-entry-current' : ''}">
+                <div class="changelog-entry-header">
+                    <span class="changelog-entry-badge">v${escapeHtml(entry.version)}</span>
+                    ${isCurrent ? '<span class="changelog-entry-current">Текущая</span>' : ''}
+                    <span class="changelog-entry-title">${escapeHtml(entry.title || '')}</span>
+                    <span class="changelog-entry-date">${escapeHtml(entry.date || '')}</span>
+                </div>
+                <div class="changelog-entry-body">
+                    <ul class="changelog-entry-changes">
+                        ${(entry.changes || []).map(c => `<li>${escapeHtml(c)}</li>`).join('')}
+                    </ul>
+                </div>
+            </div>`;
+        }).join('');
     }
 
     // ===== CATALOG =====
@@ -1173,7 +1203,7 @@
         return cfg && cfg.spawns ? cfg.spawns : [];
     }
     function renderSpawnsTags(spawns) {
-        if (!spawns || spawns.length === 0) return '<span class="filter-spawn-tag">Все карты</span>';
+        if (!spawns || spawns.length === 0) return '<span class="filter-spawn-tag" style="background:rgba(231,76,60,0.15);border-color:rgba(231,76,60,0.3);color:#e74c3c">???</span>';
         return spawns.map(mid => `<span class="filter-spawn-tag">${escapeHtml(getMapNameById(mid))}</span>`).join('');
     }
 
@@ -1296,6 +1326,7 @@
     function setupEventListeners() {
         $('view-map').addEventListener('click', () => switchView('map'));
         $('view-catalog').addEventListener('click', () => switchView('catalog'));
+        $('view-changelog').addEventListener('click', () => switchView('changelog'));
         $('view-suggestions').addEventListener('click', () => switchView('suggestions'));
         $('catalog-search').addEventListener('input', (e) => renderCatalog(e.target.value));
 

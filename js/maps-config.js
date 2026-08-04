@@ -103,72 +103,73 @@ const ICON_CONFIG = {
         emoji: '📃',
         color: '#f1c40f',
         label: 'Финансовая документация',
-        spawns: ['customs', 'interchange', 'streets'],
-        battlePass: 'Нужно для уровней 1-15 Battle Pass'
+        spawns: ['customs', 'streets', 'interchange'],
+        battlePass: 'Таможня, Улицы, Развязка — основной фарм для Battle Pass'
     },
     lpihvk: {
         icon: 'images/icons/lpihvk.png',
         emoji: '📋',
         color: '#3498db',
         label: 'Личные данные ЧВК',
-        spawns: ['groundzero'],
-        battlePass: 'Эпицентр - основной фарм'
+        spawns: ['reserve', 'lighthouse', 'icebreaker'],
+        battlePass: 'Резерв, Маяк, Ледокол'
     },
     proectdocs: {
         icon: 'images/icons/proectdocs.png',
         emoji: '📐',
         color: '#2ecc71',
         label: 'Проектная документация',
-        spawns: ['factory'],
-        battlePass: 'Только Завод'
+        spawns: ['factory', 'reserve', 'customs'],
+        battlePass: 'Завод, Резерв, Таможня'
     },
     texdocs: {
         icon: 'images/icons/texdocs.png',
         emoji: '📏',
         color: '#e67e22',
         label: 'Чертежи и тех. документация',
-        spawns: ['factory', 'laboratory'],
-        battlePass: 'Завод + Лаборатория'
+        spawns: ['interchange', 'factory', 'labyrinth'],
+        battlePass: 'Развязка, Завод, Лабиринт'
     },
     testdocs: {
         icon: 'images/icons/testdock.png',
         emoji: '🧪',
         color: '#9b59b6',
         label: 'Тестовая документация',
-        spawns: ['laboratory', 'labyrinth'],
-        battlePass: 'Лаба и Лабиринт'
+        spawns: ['shoreline', 'woods', 'icebreaker'],
+        battlePass: 'Берег, Лес, Ледокол'
     },
     polsdocs: {
         icon: 'images/icons/polsdocs.png',
         emoji: '📖',
         color: '#1abc9c',
         label: 'Пользовательская документация',
-        spawns: ['streets', 'customs', 'woods'],
-        battlePass: 'Улицы - лучший шанс'
+        spawns: ['groundzero', 'streets', 'laboratory'],
+        battlePass: 'Эпицентр, Улицы, Лаборатория'
     },
     meddocs: {
         icon: 'images/icons/meddocs.png',
         emoji: '💊',
         color: '#e91e63',
         label: 'Медицинская документация',
-        spawns: ['groundzero', 'shoreline', 'lighthouse'],
-        battlePass: 'Эпицентр основной'
+        spawns: ['laboratory', 'groundzero', 'labyrinth'],
+        battlePass: 'Лаборатория, Эпицентр, Лабиринт'
     },
     expdocs: {
         icon: 'images/icons/expdocs.png',
         emoji: '🔧',
         color: '#ff9800',
         label: 'Эксплуатационная документация',
-        spawns: ['interchange', 'reserve', 'icebreaker'],
-        battlePass: 'Развязка и Резерв'
+        spawns: ['shoreline', 'woods', 'lighthouse'],
+        battlePass: 'Берег, Лес, Маяк'
     },
     secretdocs: {
         icon: 'images/icons/secretdocs.png',
         emoji: '🔒',
         color: '#e74c3c',
-        label: 'Секретная документация',
-        spawns: ['laboratory', 'reserve', 'lighthouse', 'labyrinth'],
-        battlePass: 'Самая редкая, фарми Лабу'
+        label: 'Секретные данные',
+        spawns: [],
+        battlePass: '??? — засекречено TerraGroup',
+        secret: true
     }
 };
 
